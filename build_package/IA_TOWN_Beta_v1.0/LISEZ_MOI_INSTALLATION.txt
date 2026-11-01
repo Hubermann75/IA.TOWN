@@ -1,0 +1,55 @@
+================================================================================
+   IA TOWN — REVENUE ENGINE V3.0 & CCC.CONNECT HUB (BETA V1.0)
+   DISTRIBUTION OFFICIELLE COMPLETE POUR WINDOWS 11 & WINDOWS 10
+================================================================================
+
+BIENVENUE DANS LA VERSION BETA V1.0 !
+Ce package contient l'intégralité de l'écosystème IA TOWN, son moteur
+graphique, ses sons, ses skins de Shelter/Cyberpunk et ses composants autonomes.
+
+--------------------------------------------------------------------------------
+CONTENU DU DOSSIER :
+--------------------------------------------------------------------------------
+1. IA_TOWN_Beta_v1.0.exe
+   -> L'exécutable natif Windows 64-bit officiel avec micro-serveur intégré.
+      Lance l'application en mode fenêtre dédiée sans barre d'adresse ni onglet.
+
+2. LANCER_IA_TOWN.cmd
+   -> Lanceur rapide avec console de démarrage et détection automatique Edge/Chrome.
+
+3. LANCER_IA_TOWN_SILENCIEUX.vbs
+   -> Lanceur discret sans ouverture de fenêtre d'invite de commande noire.
+
+4. INSTALLER_RACCOURCI_BUREAU.cmd
+   -> Crée instantanément un raccourci avec l'icône IA TOWN sur votre Bureau Windows.
+
+5. DEBLOQUER_FICHIERS_WINDOWS.cmd
+   -> Débloque en 1 clic les autorisations de sécurité Windows (Mark-of-the-Web).
+
+6. app/
+   -> Le dossier complet contenant l'application complète hors-ligne (assets, skins,
+      fichiers JS/CSS, icônes, animations des bots).
+
+--------------------------------------------------------------------------------
+COMMENT DÉMARRER EN 3 ÉTAPES SIMPLES :
+--------------------------------------------------------------------------------
+Étape 1 :
+  Extrayez tout le contenu du fichier .ZIP dans un dossier de votre choix
+  (ex: Bureau ou Téléchargements).
+
+Étape 2 (Facultatif mais recommandé) :
+  Double-cliquez sur "INSTALLER_RACCOURCI_BUREAU.cmd" pour créer le raccourci
+  avec icône directement sur votre Bureau Windows.
+
+Étape 3 :
+  Double-cliquez sur "IA_TOWN_Beta_v1.0.exe" ou "LANCER_IA_TOWN.cmd".
+  L'application démarre immédiatement à 60 FPS !
+
+* Note de sécurité Windows :
+  Si Windows affiche un avertissement "Windows a protégé votre ordinateur"
+  (car c'est un fichier téléchargé d'Internet non signé par un certificat payant EV),
+  cliquez simplement sur "Informations complémentaires" puis "Exécuter quand même",
+  OU double-cliquez sur "DEBLOQUER_FICHIERS_WINDOWS.cmd" une seule fois.
+
+Support & Écosystème : CCC.CONNECT Hub v3.0
+================================================================================

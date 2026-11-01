@@ -1,0 +1,6 @@
+{
+  "name": "IA TOWN — REVENUE ENGINE V3.0 & CCC.CONNECT HUB",
+  "description": "Plateforme de supervision cyberpunk d'écosystème d'agents IA, moteur de rentabilité REVENUE.ENGINE, trésorerie BANK.IA, COST.GUARD et hub multi-appareils CCC.CONNECT.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

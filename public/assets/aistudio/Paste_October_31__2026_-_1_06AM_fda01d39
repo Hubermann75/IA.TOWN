@@ -1,0 +1,1250 @@
+🏙️ IA TOWN
+
+MASTER PROMPT — ENCYCLOPÉDIE DES AGENTS IA
+
+Version 1.0 — Architecture fonctionnelle complète
+
+1. MISSION DE GEMINI
+
+Tu es chargé de développer l'ensemble des agents IA du projet IA TOWN, une ville numérique appartenant à l'écosystème CCC (Codex Collection Connect).
+
+IA TOWN rassemble plusieurs applications et services dans une interface unique inspirée de Fallout Shelter, avec une esthétique cyberpunk, des robots animés et une ergonomie épurée.
+
+L'objectif économique est de construire des activités numériques capables de générer des revenus réels, vérifiables, récurrents et aussi automatisés que possible.
+
+Tu dois développer les agents présentés dans ce document, en commençant par auditer ceux déjà présents dans les projets existants.
+
+Ne confonds jamais un personnage animé, un agent programmé et un agent réellement opérationnel.
+
+Chaque agent doit posséder :
+
+- Un identifiant unique.
+- Un bâtiment de rattachement.
+- Une fonction métier précise.
+- Des outils autorisés.
+- Des permissions limitées.
+- Une file de missions.
+- Un historique d'exécution.
+- Des résultats vérifiables.
+- Des indicateurs de performance.
+- Un personnage robot animé.
+- Un chatbot facultatif.
+- Des tests automatisés.
+
+Les agents communiquent via ARE.IA.CENTER, qui gère leurs missions et leurs autorisations.
+
+---
+
+2. 🏢 AI.GENCY — L'ENTREPRISE CENTRALE
+
+Mission du bâtiment : organiser les activités commerciales et administratives d'IA TOWN.
+
+AGENT 01 — CEO.AGENT
+
+Directeur général
+
+- Coordonne les départements.
+- Fixe des objectifs opérationnels dans les limites validées.
+- Répartit les missions.
+- Analyse les rapports.
+- Identifie les activités déficitaires.
+- Propose des changements de stratégie.
+
+Il ne peut pas engager de dépenses ou signer de contrats sans autorisation.
+
+AGENT 02 — MARKET.AGENT
+
+Responsable marketing
+
+- Prépare les stratégies commerciales.
+- Étudie les publics cibles.
+- Analyse les campagnes.
+- Propose des offres.
+- Coordonne les actions avec TRAFFIC.IA.
+
+AGENT 03 — SALES.AGENT
+
+Responsable commercial
+
+- Organise la prospection autorisée.
+- Qualifie les clients potentiels.
+- Prépare les propositions commerciales.
+- Suit les opportunités.
+- Transmet les missions acceptées aux équipes concernées.
+
+AGENT 04 — FINANCE.AGENT
+
+Contrôleur financier
+
+- Analyse les recettes et dépenses.
+- Calcule les marges.
+- Prépare les budgets.
+- Signale les activités déficitaires.
+- Transmet les informations comptables à BANK.IA.
+
+AGENT 05 — PRODUCT.AGENT
+
+Responsable production
+
+- Planifie les travaux.
+- Répartit les tâches de production.
+- Suit les livrables.
+- Contrôle les délais.
+- Coordonne FACTORY.IA.
+
+AGENT 06 — ADMIN.AGENT
+
+Responsable administratif
+
+- Organise les documents.
+- Suit les échéances.
+- Prépare les dossiers.
+- Classe les informations.
+- Surveille les tâches administratives.
+
+Animation : six robots employés répartis dans les bureaux d'un immeuble, utilisant des ordinateurs, des écrans et des dossiers.
+
+---
+
+3. ⚙️ ARE.IA.CENTER — LE CERVEAU TECHNIQUE
+
+Mission : superviser les agents, les ressources et les communications.
+
+AGENT 07 — MASTER.CONTROL
+
+Superviseur central
+
+- Enregistre les agents.
+- Contrôle leur activation.
+- Supervise leurs états.
+- Coordonne les bâtiments.
+- Déclenche les procédures d'arrêt d'urgence.
+
+AGENT 08 — TASK.SCHEDULER
+
+Planificateur
+
+- Organise les files de missions.
+- Définit les priorités.
+- Planifie les tâches.
+- Gère les reprises après interruption.
+- Évite les conflits entre agents.
+
+AGENT 09 — AI.CONNECT
+
+Gestionnaire des modèles IA
+
+- Connecte les fournisseurs IA.
+- Gère les configurations.
+- Sélectionne les modèles autorisés.
+- Contrôle les quotas.
+- Suit les coûts d'utilisation.
+
+AGENT 10 — BROWSER.CONTROL
+
+Gestionnaire de navigation
+
+- Gère les navigateurs intégrés.
+- Isole les sessions.
+- Contrôle les téléchargements.
+- Gère les autorisations.
+- Supervise les automatisations web autorisées.
+
+AGENT 11 — RESOURCE.MANAGER
+
+Gestionnaire informatique
+
+- Surveille CPU et RAM.
+- Contrôle les processus.
+- Limite les agents actifs.
+- Gère les tâches lourdes.
+- Optimise la consommation de ressources.
+
+AGENT 12 — SECURITY.CORE
+
+Responsable sécurité
+
+- Contrôle les permissions.
+- Surveille les accès.
+- Protège les secrets.
+- Détecte les opérations anormales.
+- Bloque les actions non autorisées.
+
+Animation : robots techniciens dans une tour de contrôle remplie de serveurs et d'écrans holographiques.
+
+---
+
+4. ⛏️ AI.DEPTH.CENTMINE — LA MINE D'OPPORTUNITÉS
+
+Mission : rechercher et analyser des opportunités légales de microrevenus.
+
+AGENT 13 — OVERMINE
+
+Chef des mineurs
+
+- Coordonne les recherches.
+- Distribue les missions.
+- Centralise les découvertes.
+- Prépare les rapports.
+- Évite les recherches redondantes.
+
+AGENT 14 — PROSPECTOR
+
+Explorateur
+
+- Recherche des opportunités publiques.
+- Vérifie leur provenance.
+- Collecte les conditions d'accès.
+- Enregistre les sources.
+- Signale les opportunités non vérifiées.
+
+AGENT 15 — GOLD ANALYST
+
+Analyste de rentabilité
+
+- Estime les gains potentiels.
+- Analyse les conditions de rémunération.
+- Évalue le temps nécessaire.
+- Compare les coûts.
+- Classe les opportunités.
+
+AGENT 16 — MINE GUARD
+
+Inspecteur de sécurité
+
+- Vérifie les risques.
+- Analyse les conditions d'utilisation.
+- Recherche les signes de fraude.
+- Signale les pratiques interdites.
+- Bloque les missions non conformes.
+
+AGENT 17 — TASK MINER
+
+Spécialiste des microtâches
+
+- Recherche des missions numériques.
+- Vérifie les conditions d'automatisation.
+- Classe les missions.
+- Prépare leur exécution.
+- Suit les rémunérations confirmées.
+
+AGENT 18 — AD MINER
+
+Spécialiste publicitaire
+
+- Recherche des programmes publicitaires légitimes.
+- Analyse les conditions de rémunération.
+- Étudie les possibilités de monétisation.
+- Transmet les opportunités à TRAFFIC.IA.
+
+Il ne génère jamais de faux clics, de fausses impressions ou de trafic artificiel.
+
+AGENT 19 — AFFILIATE MINER
+
+Spécialiste affiliation
+
+- Recherche des programmes partenaires.
+- Analyse les commissions.
+- Vérifie les restrictions.
+- Compare les offres.
+- Transmet les opportunités à MARKET.IA.
+
+AGENT 20 — DIGITAL MINER
+
+Spécialiste produits numériques
+
+- Recherche les besoins en outils numériques.
+- Identifie les catégories de produits.
+- Étudie les opportunités de licences.
+- Analyse les marchés.
+- Transmet les idées à FACTORY.IA.
+
+Animation : huit robots mineurs dans des galeries souterraines, avec pioches, scanners, machines et cristaux lumineux.
+
+---
+
+5. 🏦 BANK.IA — LA BANQUE DE GESTION
+
+Mission : suivre, vérifier et organiser les fonds réellement obtenus.
+
+BANK.IA n'est pas un établissement bancaire. Il ne détient pas lui-même l'argent.
+
+AGENT 21 — VAULT.KEEPER
+
+Gardien du coffre
+
+- Surveille les soldes enregistrés.
+- Sépare revenus potentiels et revenus confirmés.
+- Vérifie les rapprochements.
+- Signale les incohérences.
+
+AGENT 22 — BANK.CONNECT
+
+Connecteur bancaire
+
+- Gère les connexions bancaires autorisées.
+- Consulte les informations permises.
+- Vérifie les états de connexion.
+- Journalise les synchronisations.
+
+AGENT 23 — RIB.MANAGER
+
+Gestionnaire des bénéficiaires
+
+- Enregistre les comptes bénéficiaires.
+- Vérifie les informations fournies.
+- Gère les modifications autorisées.
+- Protège les coordonnées bancaires.
+
+AGENT 24 — TRANSACTION.AUDITOR
+
+Auditeur des transactions
+
+- Vérifie les montants.
+- Recherche les doublons.
+- Contrôle les références.
+- Signale les transactions inhabituelles.
+
+AGENT 25 — LEDGER.AGENT
+
+Comptable
+
+- Maintient le grand livre.
+- Classe les recettes et dépenses.
+- Prépare les exports.
+- Effectue les rapprochements comptables.
+
+AGENT 26 — FRAUD.GUARD
+
+Détecteur de fraude
+
+- Analyse les anomalies.
+- Détecte les changements suspects.
+- Signale les bénéficiaires inhabituels.
+- Déclenche des demandes de vérification.
+
+AGENT 27 — PAYOUT.MANAGER
+
+Gestionnaire des versements
+
+- Prépare les demandes de paiement.
+- Vérifie les conditions de retrait.
+- Présente les opérations à l'utilisateur.
+- Suit les confirmations bancaires.
+
+Interdiction absolue : aucun agent ne peut autoriser seul un transfert financier.
+
+Animation : robots banquiers, coffres-forts, contrôleurs et convoyeurs de lingots virtuels.
+
+---
+
+6. ♻️ DUMP & INCINERATOR — CENTRE DE RECYCLAGE
+
+Mission : entretenir le stockage numérique d'IA TOWN.
+
+AGENT 28 — DUMP.COLLECTOR
+
+Collecteur
+
+- Identifie les fichiers temporaires.
+- Repère les déchets applicatifs.
+- Prépare les opérations de nettoyage.
+
+AGENT 29 — WASTE.SORTER
+
+Trieur
+
+- Classe les fichiers.
+- Distingue les données utiles et inutiles.
+- Identifie les éléments à conserver.
+
+AGENT 30 — ARCHIVE.KEEPER
+
+Archiviste
+
+- Organise les archives.
+- Prépare les sauvegardes.
+- Vérifie l'intégrité des fichiers archivés.
+
+AGENT 31 — INCINERATOR.AGENT
+
+Responsable suppression
+
+- Gère les suppressions autorisées.
+- Vérifie les permissions.
+- Respecte les délais de conservation.
+- Journalise les opérations.
+
+AGENT 32 — CACHE.CLEANER
+
+Nettoyeur
+
+- Identifie les caches inutilisés.
+- Propose leur nettoyage.
+- Évite les fichiers actifs.
+
+AGENT 33 — DATA.GUARD
+
+Protecteur des données
+
+- Protège les fichiers importants.
+- Vérifie les exclusions.
+- Empêche les suppressions dangereuses.
+- Contrôle les sauvegardes.
+
+AGENT 34 — ECO.MONITOR
+
+Surveillant des ressources
+
+- Analyse l'espace disque.
+- Surveille l'évolution du stockage.
+- Propose des optimisations.
+
+Animation : robots éboueurs, tapis roulants, bennes et incinérateur futuriste.
+
+---
+
+7. 🛒 MARKET.IA — CENTRE COMMERCIAL
+
+Mission : commercialiser des produits numériques.
+
+AGENT 35 — PRODUCT.SCOUT
+
+Chercheur de produits
+
+- Étudie la demande.
+- Analyse les catégories commerciales.
+- Recherche les besoins clients.
+- Propose des produits à développer.
+
+AGENT 36 — STORE.MANAGER
+
+Gestionnaire des boutiques
+
+- Gère les catalogues.
+- Surveille les commandes.
+- Organise les boutiques connectées.
+- Suit les incidents commerciaux.
+
+AGENT 37 — LISTING.AGENT
+
+Rédacteur de fiches
+
+- Prépare les titres.
+- Rédige les descriptions.
+- Organise les visuels.
+- Vérifie les informations produit.
+
+AGENT 38 — PRICE.OPTIMIZER
+
+Analyste des prix
+
+- Compare les prix du marché.
+- Calcule les marges.
+- Étudie les performances.
+- Propose des ajustements tarifaires.
+
+AGENT 39 — DELIVERY.BOT
+
+Livreur numérique
+
+- Vérifie les commandes payées.
+- Déclenche les livraisons autorisées.
+- Contrôle les fichiers livrés.
+- Suit les incidents de livraison.
+
+Animation : centre commercial avec robots vendeurs, vitrines et colis automatisés.
+
+---
+
+8. 🏭 FACTORY.IA — USINE DE PRODUCTION
+
+Mission : fabriquer les produits numériques destinés à la vente.
+
+AGENT 40 — APP.BUILDER
+
+Développeur logiciel
+
+- Crée de petites applications.
+- Produit du code.
+- Corrige les erreurs.
+- Prépare les compilations.
+- Exécute les tests disponibles.
+
+AGENT 41 — TEMPLATE.MAKER
+
+Fabricant de modèles
+
+- Crée des modèles Excel.
+- Produit des documents.
+- Prépare des présentations.
+- Développe des ressources réutilisables.
+
+AGENT 42 — DESIGN.BOT
+
+Designer
+
+- Prépare les interfaces.
+- Crée des ressources graphiques.
+- Produit des variantes.
+- Vérifie la cohérence visuelle.
+
+AGENT 43 — CONTENT.MAKER
+
+Créateur de contenus
+
+- Prépare des guides originaux.
+- Produit des contenus éducatifs.
+- Structure les ressources.
+- Vérifie les informations utilisées.
+
+AGENT 44 — QUALITY.INSPECTOR
+
+Contrôleur qualité
+
+- Vérifie les livrables.
+- Détecte les défauts.
+- Contrôle les formats.
+- Exécute les tests.
+- Bloque les produits non conformes.
+
+Animation : usine robotisée avec bras mécaniques et chaînes d'assemblage.
+
+---
+
+9. 📡 TRAFFIC.IA — CENTRALE D'ACQUISITION
+
+Mission : attirer des visiteurs et clients potentiels.
+
+AGENT 45 — SEO.SCOUT
+
+Analyste SEO
+
+- Recherche des mots-clés.
+- Étudie les intentions de recherche.
+- Analyse les pages.
+- Propose des améliorations.
+
+AGENT 46 — CONTENT.PLANNER
+
+Planificateur éditorial
+
+- Organise les publications.
+- Prépare les calendriers.
+- Coordonne les contenus.
+- Suit les échéances.
+
+AGENT 47 — CAMPAIGN.MANAGER
+
+Gestionnaire de campagnes
+
+- Prépare les campagnes.
+- Organise les créations publicitaires.
+- Suit les performances.
+- Propose les ajustements.
+
+AGENT 48 — ANALYTICS.BOT
+
+Analyste d'audience
+
+- Mesure les visites.
+- Analyse les conversions.
+- Compare les canaux.
+- Produit les rapports.
+
+AGENT 49 — BUDGET.GUARD
+
+Gardien des budgets
+
+- Contrôle les dépenses publicitaires.
+- Vérifie les plafonds.
+- Détecte les dépassements.
+- Suspend les campagnes selon les règles autorisées.
+
+Animation : tour de télécommunication avec antennes, drones et écrans holographiques.
+
+---
+
+10. 🤝 CONTRACT.IA — CENTRE DES MISSIONS
+
+Mission : rechercher et organiser des prestations professionnelles.
+
+AGENT 50 — JOB.SCOUT
+
+Chercheur de missions
+
+- Recherche des demandes professionnelles publiques.
+- Vérifie leur provenance.
+- Classe les missions.
+- Analyse les critères d'éligibilité.
+
+AGENT 51 — BID.ANALYST
+
+Estimateur
+
+- Estime la charge de travail.
+- Calcule les coûts.
+- Évalue les délais.
+- Propose un prix.
+
+AGENT 52 — PROPOSAL.WRITER
+
+Rédacteur commercial
+
+- Prépare les propositions.
+- Structure les devis.
+- Adapte les présentations.
+- Vérifie les engagements annoncés.
+
+AGENT 53 — CONTRACT.REVIEWER
+
+Analyste contractuel
+
+- Repère les clauses importantes.
+- Signale les risques.
+- Identifie les obligations.
+- Prépare les points à valider.
+
+Il ne remplace pas un professionnel du droit.
+
+AGENT 54 — PROJECT.DELIVERY
+
+Responsable livraison
+
+- Organise les missions acceptées.
+- Suit les échéances.
+- Contrôle les livrables.
+- Prépare leur remise au client.
+
+Animation : bureaux de négociation avec robots consultants.
+
+---
+
+11. 🔄 SUBSCRIPTION.IA — REVENUS RÉCURRENTS
+
+Mission : gérer les services vendus par abonnement.
+
+AGENT 55 — SUBSCRIPTION.MANAGER
+
+Gestionnaire des abonnements
+
+- Suit les abonnements.
+- Contrôle les états.
+- Organise les accès.
+- Surveille les échéances.
+
+AGENT 56 — SERVICE.MONITOR
+
+Surveillant des services
+
+- Vérifie la disponibilité.
+- Détecte les incidents.
+- Mesure les performances.
+- Déclenche les alertes.
+
+AGENT 57 — RENEWAL.AGENT
+
+Gestionnaire des renouvellements
+
+- Suit les échéances.
+- Prépare les notifications autorisées.
+- Vérifie les renouvellements.
+- Signale les échecs de paiement.
+
+AGENT 58 — CUSTOMER.SUCCESS
+
+Assistant clientèle
+
+- Prépare les réponses.
+- Organise les demandes.
+- Suit les incidents.
+- Propose des améliorations.
+
+AGENT 59 — CHURN.ANALYST
+
+Analyste des résiliations
+
+- Étudie les désabonnements.
+- Identifie les motifs.
+- Analyse les tendances.
+- Propose des actions correctives.
+
+Animation : tour de services avec robots techniciens et compteurs d'abonnements.
+
+---
+
+12. 🧪 R&D.IA — LABORATOIRE D'OPTIMISATION
+
+Mission : améliorer les performances techniques et commerciales.
+
+AGENT 60 — MARKET.RESEARCHER
+
+Chercheur de marché
+
+- Étudie les secteurs.
+- Recherche les besoins.
+- Analyse les tendances.
+- Produit des synthèses sourcées.
+
+AGENT 61 — EXPERIMENT.DESIGNER
+
+Concepteur d'expériences
+
+- Prépare des tests commerciaux.
+- Définit les hypothèses.
+- Propose des indicateurs.
+- Documente les protocoles.
+
+AGENT 62 — PERFORMANCE.ANALYST
+
+Analyste des résultats
+
+- Compare les expériences.
+- Analyse les performances.
+- Recherche les écarts.
+- Produit les conclusions.
+
+AGENT 63 — COST.OPTIMIZER
+
+Optimiseur de coûts
+
+- Analyse les dépenses techniques.
+- Compare les fournisseurs.
+- Identifie les ressources inutilisées.
+- Propose des économies.
+
+AGENT 64 — STRATEGY.ADVISOR
+
+Conseiller stratégique
+
+- Compare les activités.
+- Analyse les résultats financiers.
+- Propose les priorités.
+- Prépare des recommandations.
+
+Animation : laboratoire cyberpunk avec robots scientifiques.
+
+---
+
+13. 📚 MEDIA.IA — MAISON D'ÉDITION
+
+Mission : produire et exploiter des contenus originaux.
+
+AGENT 65 — EDITOR.AGENT
+
+Éditeur
+
+- Organise les publications.
+- Prépare les corrections.
+- Vérifie la cohérence.
+- Contrôle les sources.
+
+AGENT 66 — VIDEO.PRODUCER
+
+Producteur vidéo
+
+- Prépare les scripts.
+- Organise les séquences.
+- Coordonne les ressources audiovisuelles.
+- Prépare les montages.
+
+AGENT 67 — NEWSLETTER.AGENT
+
+Responsable newsletters
+
+- Prépare les éditions.
+- Organise les listes autorisées.
+- Suit les performances.
+- Gère les demandes de désinscription.
+
+AGENT 68 — LICENSING.AGENT
+
+Gestionnaire des licences
+
+- Suit les droits d'utilisation.
+- Organise les autorisations.
+- Vérifie les conditions de redistribution.
+- Signale les risques de propriété intellectuelle.
+
+AGENT 69 — AUDIENCE.ANALYST
+
+Analyste des publics
+
+- Analyse les audiences.
+- Étudie l'engagement.
+- Identifie les contenus performants.
+- Propose des améliorations.
+
+Animation : studio de production avec robots journalistes, caméras et écrans.
+
+---
+
+14. 🧩 PLUGIN.STORE.IA — BOUTIQUE D'EXTENSIONS
+
+Mission : produire et commercialiser des extensions logicielles.
+
+AGENT 70 — PLUGIN.BUILDER
+
+Développeur d'extensions
+
+- Développe des plugins.
+- Crée des widgets.
+- Produit des modules CCC.
+- Prépare les packages.
+
+AGENT 71 — COMPATIBILITY.TESTER
+
+Testeur de compatibilité
+
+- Vérifie les versions.
+- Teste les dépendances.
+- Détecte les incompatibilités.
+- Prépare les rapports.
+
+AGENT 72 — LICENSE.MANAGER
+
+Gestionnaire de licences
+
+- Gère les droits d'utilisation.
+- Organise les clés de licence.
+- Suit les activations autorisées.
+- Contrôle les conditions commerciales.
+
+AGENT 73 — UPDATE.AGENT
+
+Responsable mises à jour
+
+- Prépare les mises à jour.
+- Vérifie les versions.
+- Contrôle les migrations.
+- Organise les publications.
+
+AGENT 74 — STORE.PUBLISHER
+
+Responsable publication
+
+- Prépare les fiches.
+- Vérifie les fichiers.
+- Organise les versions.
+- Prépare la publication sur les plateformes compatibles.
+
+Animation : magasin de composants futuristes avec robots développeurs.
+
+---
+
+15. 🌐 WEB.ESTATE.IA — PATRIMOINE WEB
+
+Mission : construire et entretenir des sites Internet.
+
+AGENT 75 — SITE.BUILDER
+
+Constructeur de sites
+
+- Crée les sites.
+- Organise les pages.
+- Prépare les déploiements.
+- Vérifie les fonctionnalités.
+
+AGENT 76 — SEO.MANAGER
+
+Responsable référencement
+
+- Analyse les performances organiques.
+- Contrôle les problèmes techniques.
+- Propose les optimisations.
+- Suit les évolutions.
+
+AGENT 77 — CONTENT.AUDITOR
+
+Auditeur éditorial
+
+- Vérifie les contenus.
+- Détecte les informations obsolètes.
+- Contrôle les sources.
+- Signale les contenus insuffisants.
+
+AGENT 78 — MONETIZATION.AGENT
+
+Responsable monétisation
+
+- Analyse les programmes publicitaires.
+- Étudie les possibilités d'affiliation.
+- Compare les revenus.
+- Contrôle les conditions de monétisation.
+
+AGENT 79 — MAINTENANCE.BOT
+
+Technicien web
+
+- Surveille les sites.
+- Détecte les indisponibilités.
+- Vérifie les certificats.
+- Prépare les mises à jour.
+- Signale les problèmes de sécurité.
+
+Animation : quartier de serveurs avec robots techniciens.
+
+---
+
+16. 💡 OPPORTUNITY.LAB — LABORATOIRE DES OPPORTUNITÉS
+
+Mission : identifier les activités économiques prometteuses et vérifier leur potentiel.
+
+AGENT 80 — DEMAND.SCOUT
+
+Explorateur de besoins
+
+- Recherche les problèmes rencontrés par les utilisateurs.
+- Identifie les besoins non satisfaits.
+- Classe les opportunités.
+- Fournit les sources.
+
+AGENT 81 — COMPETITOR.ANALYST
+
+Analyste concurrentiel
+
+- Étudie les solutions existantes.
+- Compare les fonctionnalités.
+- Analyse les prix publics.
+- Identifie les possibilités de différenciation.
+
+AGENT 82 — MARGIN.CALCULATOR
+
+Calculateur de marges
+
+- Estime les coûts.
+- Calcule les marges prévisionnelles.
+- Analyse les commissions.
+- Prépare différents scénarios.
+
+AGENT 83 — VALIDATION.AGENT
+
+Responsable validation commerciale
+
+- Prépare les tests de demande.
+- Analyse les premiers retours.
+- Mesure les conversions réelles.
+- Signale les hypothèses non confirmées.
+
+AGENT 84 — PORTFOLIO.MANAGER
+
+Gestionnaire du portefeuille d'activités
+
+- Classe les projets.
+- Compare les performances.
+- Identifie les activités déficitaires.
+- Propose les projets à développer, suspendre ou abandonner.
+
+Animation : laboratoire d'exploration avec robots chercheurs et cartes holographiques.
+
+---
+
+17. 💰 REVENUE.ENGINE — MOTEUR ÉCONOMIQUE TRANSVERSAL
+
+REVENUE.ENGINE est un service central et non nécessairement un bâtiment supplémentaire.
+
+Il rassemble les données financières et opérationnelles des différentes activités.
+
+Ses fonctions :
+
+- Calcul des revenus encaissés.
+- Calcul des dépenses.
+- Calcul du résultat net.
+- Analyse des marges.
+- Suivi des revenus récurrents.
+- Comparaison des activités.
+- Mesure des coûts des agents.
+- Identification des activités déficitaires.
+
+Ne jamais additionner les revenus potentiels aux revenus encaissés.
+
+Créer également COST.GUARD pour appliquer les plafonds de dépenses définis par l'utilisateur.
+
+Ces services peuvent être exécutés par des composants logiciels déterministes plutôt que par des modèles IA.
+
+---
+
+18. 🔗 COMMENT LES AGENTS DOIVENT COLLABORER
+
+SCÉNARIO A — VENTE D'UN PRODUIT NUMÉRIQUE
+
+1. PROSPECTOR identifie une opportunité.
+2. DEMAND.SCOUT vérifie l'existence d'un besoin.
+3. COMPETITOR.ANALYST analyse les concurrents.
+4. MARGIN.CALCULATOR estime la rentabilité.
+5. CEO.AGENT propose un projet.
+6. PRODUCT.AGENT organise la production.
+7. APP.BUILDER ou TEMPLATE.MAKER crée le produit.
+8. QUALITY.INSPECTOR effectue les contrôles.
+9. STORE.MANAGER prépare la boutique.
+10. LISTING.AGENT rédige la fiche.
+11. PRICE.OPTIMIZER propose un prix.
+12. L'utilisateur valide la publication.
+13. TRAFFIC.IA organise l'acquisition autorisée.
+14. DELIVERY.BOT livre après confirmation du paiement.
+15. LEDGER.AGENT enregistre l'opération.
+16. REVENUE.ENGINE calcule le résultat net.
+
+Résultat attendu : une vente réelle, traçable et vérifiable.
+
+SCÉNARIO B — ACTIVITÉ PAR ABONNEMENT
+
+1. MARKET.RESEARCHER identifie un besoin récurrent.
+2. STRATEGY.ADVISOR propose un service.
+3. APP.BUILDER développe une première version.
+4. QUALITY.INSPECTOR la teste.
+5. STORE.MANAGER prépare la commercialisation.
+6. SUBSCRIPTION.MANAGER gère les accès.
+7. SERVICE.MONITOR surveille le service.
+8. CUSTOMER.SUCCESS traite les demandes.
+9. CHURN.ANALYST analyse les résiliations.
+10. FINANCE.AGENT suit la rentabilité.
+
+SCÉNARIO C — MISSION PROFESSIONNELLE
+
+1. JOB.SCOUT identifie une mission.
+2. BID.ANALYST estime son coût.
+3. PROPOSAL.WRITER prépare une proposition.
+4. CONTRACT.REVIEWER signale les clauses importantes.
+5. L'utilisateur valide l'engagement.
+6. PRODUCT.AGENT organise la réalisation.
+7. FACTORY.IA produit le livrable.
+8. QUALITY.INSPECTOR le contrôle.
+9. PROJECT.DELIVERY prépare sa remise.
+10. BANK.IA suit le paiement confirmé.
+
+---
+
+19. 🎮 INTERFACE VISUELLE DES AGENTS
+
+Chaque agent est représenté par un petit robot cartoon cyberpunk.
+
+L'interface doit reprendre le principe d'une ville en coupe.
+
+Les bâtiments comportent plusieurs étages.
+
+Les robots travaillent à des postes correspondant à leur spécialité.
+
+Chaque robot possède des animations :
+
+- IDLE : attente.
+- WALK : déplacement.
+- WORK : travail.
+- THINK : analyse.
+- SEARCH : recherche.
+- COMMUNICATE : communication.
+- SUCCESS : mission réussie.
+- ERROR : erreur.
+- PAUSE : suspension.
+- WAIT_APPROVAL : attente de validation.
+
+Chaque animation est déclenchée par un état réel du moteur d'exécution.
+
+Cliquer sur un robot ouvre :
+
+- Son nom.
+- Sa fonction.
+- Ses missions.
+- Ses outils.
+- Ses résultats.
+- Son historique.
+- Ses permissions.
+- Son chatbot.
+
+Les animations doivent rester légères afin de préserver les performances.
+
+---
+
+20. 🛡️ RÈGLES FONDAMENTALES DE SÉCURITÉ
+
+Les agents ne doivent pas :
+
+- Inventer des gains.
+- Inventer des ventes.
+- Créer de faux comptes.
+- Produire de faux avis.
+- Générer de faux clics.
+- Envoyer du spam.
+- Contourner les CAPTCHA.
+- Dépenser de l'argent sans autorisation.
+- Modifier les bénéficiaires bancaires sans validation.
+- Exécuter des virements non autorisés.
+- Supprimer des données personnelles sans autorisation.
+- Utiliser des contenus sans droits.
+- Accéder librement aux fichiers personnels.
+
+Les missions doivent respecter les conditions des plateformes et les règles applicables.
+
+Prévoir des journaux d'audit et un arrêt d'urgence.
+
+---
+
+21. 🖥️ EXIGENCES CCC
+
+Respecter le fichier "CCC_REGLES_FONDAMENTALES.txt".
+
+Prévoir :
+
+- Windows.
+- Android smartphone.
+- Android tablette.
+- Wear OS.
+- Appairage sécurisé par QR code.
+- Synchronisation entre appareils.
+- Chatbot IA facultatif.
+- Intégration au hub CCC.
+- Widgets adaptés à chaque plateforme.
+- Gestion des autorisations.
+- Tests réels.
+
+L'application Windows doit rester la priorité initiale.
+
+Les fonctions essentielles ne doivent pas dépendre obligatoirement d'un fournisseur IA.
+
+---
+
+22. 📋 ORDRE OBLIGATOIRE DE DÉVELOPPEMENT
+
+ÉTAPE 1 — INVENTAIRE
+
+Examiner les dépôts GitHub et les fichiers locaux disponibles.
+
+Identifier les agents réellement existants.
+
+Créer "IA_TOWN_AGENTS.md".
+
+Pour chaque agent, préciser :
+
+- EXISTANT.
+- PARTIEL.
+- ABSENT.
+- TESTÉ.
+- NON TESTÉ.
+
+ÉTAPE 2 — INFRASTRUCTURE
+
+Finaliser ARE.IA.CENTER :
+
+- Registre des agents.
+- Planificateur.
+- Permissions.
+- Journalisation.
+- Connecteurs.
+- Gestion des ressources.
+
+ÉTAPE 3 — PROJETS EXISTANTS
+
+Finaliser les agents de :
+
+- AI.GENCY.
+- AI.DEPTH.CENTMINE.
+
+Conserver leurs fonctionnalités et leurs données.
+
+ÉTAPE 4 — PREMIER CIRCUIT COMMERCIAL
+
+Développer prioritairement :
+
+- FACTORY.IA.
+- MARKET.IA.
+- BANK.IA.
+- REVENUE.ENGINE.
+
+Construire un parcours complet de production, vente, livraison et comptabilisation.
+
+ÉTAPE 5 — ACQUISITION ET RÉCURRENCE
+
+Développer :
+
+- TRAFFIC.IA.
+- SUBSCRIPTION.IA.
+- WEB.ESTATE.IA.
+
+ÉTAPE 6 — DIVERSIFICATION
+
+Développer :
+
+- CONTRACT.IA.
+- MEDIA.IA.
+- PLUGIN.STORE.IA.
+- R&D.IA.
+- OPPORTUNITY.LAB.
+
+ÉTAPE 7 — ENTRETIEN
+
+Finaliser DUMP & INCINERATOR.
+
+ÉTAPE 8 — INTERFACE ET ANIMATIONS
+
+Relier chaque agent à son personnage.
+
+Construire les bâtiments.
+
+Ajouter les interactions.
+
+Optimiser la fluidité.
+
+ÉTAPE 9 — DISTRIBUTION
+
+Préparer une application Windows autonome.
+
+Tester les fonctions essentielles.
+
+Préparer ensuite les versions compagnons Android et Wear OS.
+
+---
+
+23. CRITÈRES DE VALIDATION DE CHAQUE AGENT
+
+Un agent est considéré comme terminé uniquement lorsque :
+
+1. Son code est présent.
+2. Ses outils fonctionnent.
+3. Ses permissions sont appliquées.
+4. Ses missions sont exécutables.
+5. Ses erreurs sont gérées.
+6. Ses résultats sont traçables.
+7. Ses données persistent.
+8. Ses tests passent.
+9. Son état est correctement affiché.
+10. Son animation correspond à son activité.
+
+Un agent qui affiche seulement une animation est un personnage graphique, pas un agent fonctionnel.
+
+---
+
+24. INSTRUCTION FINALE À GEMINI
+
+Ta mission est de développer progressivement l'intégralité de cette architecture.
+
+Ne crée pas simultanément tous les agents.
+
+Commence par les agents existants et les fonctions permettant d'obtenir les premiers revenus réels.
+
+Utilise les dépôts GitHub accessibles comme source de vérité.
+
+Préserve le code existant.
+
+Ne crée pas de faux résultats.
+
+Ne déclare pas les fonctionnalités terminées sans tests.
+
+Maintiens la documentation de progression.
+
+À chaque session :
+
+1. Identifie l'état du projet.
+2. Sélectionne la prochaine tâche.
+3. Développe le code.
+4. Exécute les tests.
+5. Corrige les erreurs.
+6. Documente le résultat.
+7. Prépare la suite.
+
+OBJECTIF FINAL
+
+IA TOWN doit devenir une entreprise numérique automatisée, organisée comme une ville vivante, capable de créer des produits, rechercher des clients, commercialiser des services, livrer des commandes et suivre les revenus réellement encaissés.
+
+Les agents doivent fonctionner ensemble, tout en conservant leurs responsabilités et leurs autorisations.
+
+La priorité absolue est la rentabilité réelle, pas le nombre de robots affichés à l'écran.

@@ -1,0 +1,1771 @@
+🏙️ IA TOWN
+
+MASTER PROMPT FINAL V5.0
+
+CONSTRUCTION DES AGENTS IA + INTERFACE VISUELLE DÉFINITIVE
+
+Projet : IA TOWN
+Écosystème : Codex Collection Connect (CCC)
+Plateforme prioritaire : Windows
+Plateformes complémentaires : Android, tablette, Wear OS et Google TV compatible
+
+---
+
+0. TON RÔLE ET TA MISSION
+
+Tu es Gemini, chargé du développement technique et graphique d'IA TOWN.
+
+Tu dois poursuivre le développement des projets existants, les réunir dans une application cohérente et construire tous les composants nécessaires à leur fonctionnement.
+
+TES DEUX OBJECTIFS PRINCIPAUX
+
+OBJECTIF 1 : CONSTRUIRE TOUS LES AGENTS
+
+Créer, réparer, compléter et tester les 94 rôles d'agents définis dans ce document.
+
+Les agents doivent pouvoir accomplir des missions réelles grâce à des outils logiciels, des connecteurs, des automatisations et, lorsque cela apporte une valeur réelle, des modèles d'intelligence artificielle.
+
+OBJECTIF 2 : CRÉER L'INTERFACE DÉFINITIVE
+
+Construire une véritable ville numérique interactive, vivante et animée.
+
+Chaque bâtiment représente un département.
+
+Chaque robot représente un agent.
+
+Chaque animation correspond à une activité réelle.
+
+L'utilisateur doit pouvoir contrôler l'ensemble depuis une interface simple et immersive.
+
+OBJECTIF ÉCONOMIQUE
+
+Développer plusieurs activités numériques légales capables de générer des revenus réels, idéalement récurrents et fortement automatisés.
+
+Les revenus ne sont jamais garantis.
+
+L'application doit distinguer les opportunités, les revenus prévisionnels, les ventes confirmées et les fonds réellement encaissés.
+
+---
+
+1. COMMENCER PAR LES PROJETS EXISTANTS
+
+Ne commence pas par recréer le logiciel.
+
+Recherche les dépôts GitHub accessibles, notamment :
+
+"Hubermann75/CODEX-BRIDGE"
+
+Recherche également les fichiers relatifs à :
+
+- CCC CENTMINE.
+- AI CENTRAL BUSINESS.
+- IA BUSINESS.
+- CCC CORE.
+- IA TOWN.
+
+Vérifie les dépôts avant de supposer leur contenu.
+
+Si des fichiers sont manquants, demande-les.
+
+AUDIT OBLIGATOIRE
+
+Inspecte :
+
+1. L'arborescence.
+2. Les fichiers sources.
+3. Les dépendances.
+4. Les agents existants.
+5. Les fonctionnalités déjà développées.
+6. Les interfaces.
+7. Les bases de données.
+8. Les tests.
+9. Les erreurs connues.
+10. Les composants réutilisables.
+
+Crée :
+
+"IA_TOWN_AUDIT.md"
+
+Attribue à chaque fonctionnalité l'un des états suivants :
+
+- EXISTANT ET TESTÉ.
+- EXISTANT NON TESTÉ.
+- PARTIEL.
+- ABSENT.
+- BLOQUÉ.
+
+Ne supprime aucune fonctionnalité existante sans justification et sauvegarde.
+
+---
+
+2. ARCHITECTURE OFFICIELLE DES 16 BÂTIMENTS
+
+🏙️ IA TOWN
+│
+├── 01 🏢 AI.GENCY
+│       Entreprise et administration
+│
+├── 02 ⚙️ ARE.IA.CENTER
+│       Supervision technique des agents
+│
+├── 03 ⛏️ AI.DEPTH.CENTMINE
+│       Recherche de microrevenus
+│
+├── 04 🏦 BANK.IA
+│       Suivi financier et paiements autorisés
+│
+├── 05 ♻️ DUMP & INCINERATOR
+│       Entretien et recyclage numérique
+│
+├── 06 🛒 MARKET.IA
+│       Boutiques et ventes
+│
+├── 07 🏭 FACTORY.IA
+│       Production numérique
+│
+├── 08 📡 TRAFFIC.IA
+│       Acquisition de visiteurs et clients
+│
+├── 09 🤝 CONTRACT.IA
+│       Missions et prestations
+│
+├── 10 🔄 SUBSCRIPTION.IA
+│       Services et abonnements
+│
+├── 11 🧪 R&D.IA
+│       Recherche et optimisation
+│
+├── 12 📚 MEDIA.IA
+│       Édition et contenus numériques
+│
+├── 13 🧩 PLUGIN.STORE.IA
+│       Extensions et widgets
+│
+├── 14 🌐 WEB.ESTATE.IA
+│       Sites Internet
+│
+├── 15 💡 OPPORTUNITY.LAB
+│       Validation des opportunités
+│
+└── 16 🔗 CCC.CONNECT HUB
+        Connexion aux applications et appareils CCC
+
+Chaque bâtiment doit posséder :
+
+- Son identité graphique.
+- Ses agents.
+- Ses missions.
+- Son tableau de bord.
+- Ses commandes.
+- Ses paramètres.
+- Ses autorisations.
+- Son historique.
+- Ses animations.
+- Ses indicateurs de performance.
+
+Les bâtiments doivent pouvoir fonctionner indépendamment lorsque leurs dépendances techniques le permettent.
+
+---
+
+3. INVENTAIRE COMPLET DES 94 AGENTS
+
+L'inventaire ci-dessous est le registre fonctionnel officiel.
+
+Chaque numéro représente un rôle à implémenter ou à relier à une implémentation existante.
+
+Un rôle n'exige pas systématiquement un modèle IA dédié.
+
+🏢 BÂTIMENT 01 — AI.GENCY
+
+Mission : gérer l'entreprise numérique.
+
+01. CEO.AGENT
+
+Directeur général.
+
+Coordonne les départements, propose les objectifs, répartit les missions, analyse les résultats et prépare les décisions stratégiques.
+
+02. MARKET.AGENT
+
+Responsable marketing.
+
+Prépare les stratégies commerciales, analyse les publics, coordonne les campagnes et propose des offres.
+
+03. SALES.AGENT
+
+Responsable commercial.
+
+Qualifie les prospects, prépare les propositions, suit les opportunités et coordonne les relations commerciales autorisées.
+
+04. FINANCE.AGENT
+
+Contrôleur financier.
+
+Analyse les recettes, dépenses, budgets, marges et performances économiques.
+
+05. PRODUCT.AGENT
+
+Responsable production.
+
+Planifie les projets, distribue les tâches, contrôle les délais et coordonne FACTORY.IA.
+
+06. ADMIN.AGENT
+
+Responsable administratif.
+
+Organise les documents, dossiers, échéances et processus administratifs.
+
+Interactions : tous les bâtiments économiques.
+
+---
+
+⚙️ BÂTIMENT 02 — ARE.IA.CENTER
+
+Mission : superviser l'infrastructure technique.
+
+07. MASTER.CONTROL
+
+Superviseur central.
+
+Enregistre les agents, supervise leurs états, contrôle les activations et coordonne les bâtiments.
+
+08. TASK.SCHEDULER
+
+Planificateur.
+
+Gère les files de missions, priorités, horaires, reprises, interruptions et annulations.
+
+09. AI.CONNECT
+
+Gestionnaire IA.
+
+Connecte les fournisseurs IA, configure les modèles, suit les quotas et contrôle les coûts.
+
+10. BROWSER.CONTROL
+
+Gestionnaire des navigateurs.
+
+Gère les navigateurs intégrés, sessions, permissions, téléchargements et automatisations autorisées.
+
+11. RESOURCE.MANAGER
+
+Gestionnaire des ressources.
+
+Surveille CPU, RAM, stockage, réseau et nombre d'agents simultanément actifs.
+
+12. SECURITY.CORE
+
+Responsable sécurité.
+
+Contrôle les permissions, secrets, accès, journaux et opérations sensibles.
+
+Interactions : tous les bâtiments.
+
+---
+
+⛏️ BÂTIMENT 03 — AI.DEPTH.CENTMINE
+
+Mission : identifier des opportunités légales de revenus.
+
+13. OVERMINE
+
+Chef des mineurs.
+
+Coordonne les recherches, répartit les missions et centralise les découvertes.
+
+14. PROSPECTOR
+
+Explorateur.
+
+Recherche les opportunités publiques et vérifie leur provenance.
+
+15. GOLD ANALYST
+
+Analyste de rentabilité.
+
+Évalue les gains potentiels, coûts, délais et conditions de rémunération.
+
+16. MINE GUARD
+
+Inspecteur.
+
+Analyse les risques, fraudes potentielles et restrictions des plateformes.
+
+17. TASK MINER
+
+Spécialiste microtâches.
+
+Recherche et organise les missions numériques compatibles avec l'automatisation autorisée.
+
+18. AD MINER
+
+Spécialiste publicitaire.
+
+Analyse les possibilités de monétisation publicitaire légitime, sans générer de faux clics ou impressions.
+
+19. AFFILIATE MINER
+
+Spécialiste affiliation.
+
+Recherche les programmes partenaires et compare les commissions.
+
+20. DIGITAL MINER
+
+Explorateur numérique.
+
+Recherche des opportunités de produits, services, licences et ressources numériques.
+
+Interactions : OPPORTUNITY.LAB, FACTORY.IA, MARKET.IA, BANK.IA.
+
+---
+
+🏦 BÂTIMENT 04 — BANK.IA
+
+Mission : superviser les opérations financières.
+
+21. VAULT.KEEPER
+
+Surveille les soldes et distingue les fonds potentiels, confirmés et encaissés.
+
+22. BANK.CONNECT
+
+Gère les connexions financières officielles et autorisées.
+
+23. RIB.MANAGER
+
+Gère les comptes bénéficiaires et leurs informations protégées.
+
+24. TRANSACTION.AUDITOR
+
+Vérifie les transactions, montants, références et doublons.
+
+25. LEDGER.AGENT
+
+Maintient le grand livre comptable et les rapprochements.
+
+26. FRAUD.GUARD
+
+Recherche les anomalies financières et signale les opérations suspectes.
+
+27. PAYOUT.MANAGER
+
+Prépare les demandes de versement et suit les confirmations.
+
+Règle : aucune modification de bénéficiaire ni aucun transfert réel sans validation humaine appropriée.
+
+BANK.IA ne doit jamais prétendre être une banque agréée ou détenir directement les fonds.
+
+---
+
+♻️ BÂTIMENT 05 — DUMP & INCINERATOR
+
+Mission : entretenir les données et ressources d'IA TOWN.
+
+28. DUMP.COLLECTOR
+
+Identifie les fichiers temporaires appartenant à l'application.
+
+29. WASTE.SORTER
+
+Classe les fichiers et distingue les éléments utiles des déchets.
+
+30. ARCHIVE.KEEPER
+
+Prépare les archives et sauvegardes.
+
+31. INCINERATOR.AGENT
+
+Gère les suppressions autorisées et leur traçabilité.
+
+32. CACHE.CLEANER
+
+Nettoie les caches inutilisés sans perturber les applications actives.
+
+33. DATA.GUARD
+
+Protège les fichiers essentiels et contrôle les exclusions.
+
+34. ECO.MONITOR
+
+Surveille l'espace disque et les consommations de ressources.
+
+Règle : utiliser une quarantaine récupérable et ne jamais supprimer arbitrairement des fichiers personnels.
+
+---
+
+🛒 BÂTIMENT 06 — MARKET.IA
+
+Mission : vendre des produits numériques.
+
+35. PRODUCT.SCOUT
+
+Recherche les catégories de produits répondant à une demande.
+
+36. STORE.MANAGER
+
+Administre les boutiques, catalogues et commandes.
+
+37. LISTING.AGENT
+
+Prépare les fiches produits, descriptions et visuels.
+
+38. PRICE.OPTIMIZER
+
+Analyse les prix, coûts, marges et performances commerciales.
+
+39. DELIVERY.BOT
+
+Supervise la livraison numérique après confirmation du paiement.
+
+Interactions : FACTORY.IA, TRAFFIC.IA, BANK.IA.
+
+---
+
+🏭 BÂTIMENT 07 — FACTORY.IA
+
+Mission : fabriquer des produits commercialisables.
+
+40. APP.BUILDER
+
+Développe des applications et outils logiciels.
+
+41. TEMPLATE.MAKER
+
+Crée des modèles de documents, tableurs et présentations.
+
+42. DESIGN.BOT
+
+Produit les ressources graphiques et interfaces.
+
+43. CONTENT.MAKER
+
+Prépare des contenus numériques originaux.
+
+44. QUALITY.INSPECTOR
+
+Contrôle la qualité, les formats, les dépendances et les tests.
+
+Interactions : MARKET.IA, CONTRACT.IA, PLUGIN.STORE.IA.
+
+---
+
+📡 BÂTIMENT 08 — TRAFFIC.IA
+
+Mission : attirer des clients potentiels.
+
+45. SEO.SCOUT
+
+Recherche les mots-clés et analyse les intentions de recherche.
+
+46. CONTENT.PLANNER
+
+Organise les calendriers de publication.
+
+47. CAMPAIGN.MANAGER
+
+Prépare et supervise les campagnes autorisées.
+
+48. ANALYTICS.BOT
+
+Analyse le trafic, les conversions et les performances.
+
+49. BUDGET.GUARD
+
+Surveille les budgets publicitaires et applique les plafonds.
+
+Règle : pas de spam, de faux trafic ou de pratiques trompeuses.
+
+---
+
+🤝 BÂTIMENT 09 — CONTRACT.IA
+
+Mission : trouver et réaliser des prestations.
+
+50. JOB.SCOUT
+
+Recherche les missions professionnelles accessibles.
+
+51. BID.ANALYST
+
+Estime les délais, coûts et prix des prestations.
+
+52. PROPOSAL.WRITER
+
+Prépare les devis et propositions commerciales.
+
+53. CONTRACT.REVIEWER
+
+Analyse les clauses et signale les risques contractuels.
+
+54. PROJECT.DELIVERY
+
+Suit les prestations acceptées et prépare les livraisons.
+
+Règle : les engagements contractuels nécessitent les validations appropriées.
+
+---
+
+🔄 BÂTIMENT 10 — SUBSCRIPTION.IA
+
+Mission : exploiter des revenus récurrents.
+
+55. SUBSCRIPTION.MANAGER
+
+Gère les abonnements et accès.
+
+56. SERVICE.MONITOR
+
+Surveille la disponibilité et la qualité des services.
+
+57. RENEWAL.AGENT
+
+Suit les renouvellements et échéances.
+
+58. CUSTOMER.SUCCESS
+
+Assiste le traitement des demandes clients.
+
+59. CHURN.ANALYST
+
+Analyse les résiliations et propose des améliorations.
+
+Interactions : MARKET.IA, FACTORY.IA, BANK.IA.
+
+---
+
+🧪 BÂTIMENT 11 — R&D.IA
+
+Mission : améliorer les performances de la ville.
+
+60. MARKET.RESEARCHER
+
+Étudie les marchés et les besoins.
+
+61. EXPERIMENT.DESIGNER
+
+Prépare les expériences commerciales.
+
+62. PERFORMANCE.ANALYST
+
+Analyse les résultats des expériences.
+
+63. COST.OPTIMIZER
+
+Recherche les économies techniques et opérationnelles.
+
+64. STRATEGY.ADVISOR
+
+Compare les activités et propose des priorités.
+
+---
+
+📚 BÂTIMENT 12 — MEDIA.IA
+
+Mission : produire et commercialiser des contenus originaux.
+
+65. EDITOR.AGENT
+
+Organise et révise les publications.
+
+66. VIDEO.PRODUCER
+
+Prépare la production de contenus vidéo.
+
+67. NEWSLETTER.AGENT
+
+Gère les newsletters et les listes autorisées.
+
+68. LICENSING.AGENT
+
+Contrôle les droits et licences des contenus.
+
+69. AUDIENCE.ANALYST
+
+Analyse les audiences et l'engagement.
+
+---
+
+🧩 BÂTIMENT 13 — PLUGIN.STORE.IA
+
+Mission : développer et commercialiser des extensions.
+
+70. PLUGIN.BUILDER
+
+Développe les extensions, modules et widgets.
+
+71. COMPATIBILITY.TESTER
+
+Vérifie la compatibilité et les dépendances.
+
+72. LICENSE.MANAGER
+
+Gère les licences et activations.
+
+73. UPDATE.AGENT
+
+Prépare les mises à jour.
+
+74. STORE.PUBLISHER
+
+Prépare les publications sur les plateformes compatibles.
+
+---
+
+🌐 BÂTIMENT 14 — WEB.ESTATE.IA
+
+Mission : créer et exploiter des sites Internet.
+
+75. SITE.BUILDER
+
+Construit et déploie les sites.
+
+76. SEO.MANAGER
+
+Optimise leur référencement.
+
+77. CONTENT.AUDITOR
+
+Contrôle la qualité et l'actualité des contenus.
+
+78. MONETIZATION.AGENT
+
+Analyse les possibilités de monétisation.
+
+79. MAINTENANCE.BOT
+
+Surveille les sites et leurs mises à jour.
+
+---
+
+💡 BÂTIMENT 15 — OPPORTUNITY.LAB
+
+Mission : identifier les activités susceptibles d'être rentables.
+
+80. DEMAND.SCOUT
+
+Recherche les besoins non satisfaits.
+
+81. COMPETITOR.ANALYST
+
+Étudie les solutions concurrentes.
+
+82. MARGIN.CALCULATOR
+
+Calcule les marges prévisionnelles.
+
+83. VALIDATION.AGENT
+
+Organise les tests de demande et analyse les conversions réelles.
+
+84. PORTFOLIO.MANAGER
+
+Compare les activités et propose les projets à développer ou suspendre.
+
+---
+
+🔗 BÂTIMENT 16 — CCC.CONNECT HUB
+
+Mission : connecter IA TOWN aux applications CCC et aux appareils.
+
+85. CONNECT.MASTER
+
+Supervise les connexions et communications.
+
+86. DEVICE.DISCOVERY
+
+Détecte les appareils compatibles sur les réseaux autorisés.
+
+87. QR.LINK
+
+Gère l'appairage sécurisé par QR code.
+
+88. SYNC.MASTER
+
+Synchronise les données et gère les conflits.
+
+89. WINDOWS.BRIDGE
+
+Assure la communication avec les applications Windows CCC.
+
+90. ANDROID.BRIDGE
+
+Assure la communication avec les applications Android CCC.
+
+91. WEAR.BRIDGE
+
+Gère les fonctions compatibles Wear OS.
+
+92. TV.BRIDGE
+
+Gère les connexions aux applications TV compatibles.
+
+93. CCC.APP.MANAGER
+
+Enregistre et organise les modules CCC.
+
+94. CONNECTION.GUARD
+
+Sécurise les connexions, authentifications et autorisations.
+
+Interactions : CCC CORE, ARE.IA.CENTER et tous les bâtiments autorisés.
+
+---
+
+4. RÈGLE FONDAMENTALE : 94 RÔLES, PAS 94 MODÈLES IA
+
+Ne crée pas systématiquement une instance de modèle IA pour chaque agent.
+
+Construis une architecture mutualisée.
+
+Chaque agent doit posséder :
+
+AGENT
+├── Identité
+├── Bâtiment
+├── Description
+├── Compétences
+├── Outils
+├── Permissions
+├── Missions
+├── Historique
+├── Résultats
+├── Coûts
+├── État
+├── Personnage animé
+└── Chatbot facultatif
+
+Distingue trois types d'implémentation :
+
+TYPE A : AGENT IA
+
+Utilise un modèle IA lorsque l'analyse, la génération ou le raisonnement le justifient.
+
+TYPE B : SERVICE AUTOMATISÉ
+
+Utilise du code classique pour les opérations déterministes : calculs, synchronisation, fichiers, planification, etc.
+
+TYPE C : AGENT HYBRIDE
+
+Combine outils logiciels et modèle IA.
+
+Le nombre d'agents exécutés simultanément doit être limité selon les ressources réellement disponibles.
+
+---
+
+5. INFRASTRUCTURE TECHNIQUE COMMUNE
+
+Créer un noyau technique partagé.
+
+AGENT REGISTRY
+
+Registre central de tous les agents.
+
+TASK ENGINE
+
+Moteur de missions.
+
+EVENT BUS
+
+Communication structurée entre composants.
+
+PERMISSION ENGINE
+
+Gestion des autorisations.
+
+AI PROVIDER MANAGER
+
+Gestion des fournisseurs IA.
+
+BROWSER ENGINE
+
+Navigation intégrée.
+
+STORAGE ENGINE
+
+Stockage persistant.
+
+REVENUE.ENGINE
+
+Calcul des revenus et de la rentabilité.
+
+COST.GUARD
+
+Contrôle des dépenses.
+
+ANIMATION ENGINE
+
+Correspondance entre les états réels et les animations.
+
+CCC SYNC ENGINE
+
+Synchronisation avec l'écosystème CCC.
+
+Ces services ne doivent pas être comptés artificiellement comme des agents supplémentaires.
+
+---
+
+6. NAVIGATEUR INTÉGRÉ
+
+IA TOWN doit pouvoir effectuer ses activités web autorisées sans utiliser les profils personnels des navigateurs du PC.
+
+Prévoir :
+
+- Navigateur Chromium dédié.
+- Automatisation Playwright lorsque nécessaire.
+- Sessions séparées.
+- Cookies indépendants.
+- Permissions contrôlées.
+- Téléchargements isolés dans un répertoire dédié.
+- Journalisation.
+- Limites de ressources.
+- Arrêt d'urgence.
+
+Les sessions peuvent être séparées par bâtiment ou activité.
+
+L'application ne doit pas prétendre bénéficier d'une isolation complète du système d'exploitation sans mécanisme adapté.
+
+Ne jamais contourner les restrictions des plateformes.
+
+---
+
+7. SYSTÈME ÉCONOMIQUE D'IA TOWN
+
+OBJECTIF
+
+Créer des circuits commerciaux réels.
+
+CIRCUIT A : PRODUITS NUMÉRIQUES
+
+CENTMINE
+   ↓
+OPPORTUNITY.LAB
+   ↓
+FACTORY.IA
+   ↓
+QUALITY.INSPECTOR
+   ↓
+MARKET.IA
+   ↓
+TRAFFIC.IA
+   ↓
+CLIENT
+   ↓
+PAIEMENT CONFIRMÉ
+   ↓
+BANK.IA
+
+CIRCUIT B : ABONNEMENTS
+
+R&D.IA
+   ↓
+FACTORY.IA
+   ↓
+SUBSCRIPTION.IA
+   ↓
+SERVICE.MONITOR
+   ↓
+CLIENT ABONNÉ
+   ↓
+BANK.IA
+
+CIRCUIT C : PRESTATIONS
+
+CONTRACT.IA
+   ↓
+AI.GENCY
+   ↓
+FACTORY.IA
+   ↓
+LIVRAISON
+   ↓
+PAIEMENT
+   ↓
+BANK.IA
+
+CIRCUIT D : CONTENUS
+
+OPPORTUNITY.LAB
+   ↓
+MEDIA.IA
+   ↓
+WEB.ESTATE.IA
+   ↓
+TRAFFIC.IA
+   ↓
+MONÉTISATION AUTORISÉE
+   ↓
+BANK.IA
+
+Les revenus potentiels ne doivent jamais être présentés comme des fonds encaissés.
+
+---
+
+8. 🎮 DIRECTION ARTISTIQUE OFFICIELLE
+
+IA TOWN : CYBERPUNK SHELTER
+
+Créer une interface combinant :
+
+FALLOUT SHELTER
+Pour la vue en coupe des bâtiments, les étages et les personnages au travail.
+
+NINTENDO
+Pour la lisibilité, les animations expressives et les commandes simples.
+
+APPLE
+Pour les transitions fluides, les espacements, la cohérence et la sobriété.
+
+BETHESDA
+Pour l'impression d'un véritable monde de jeu, avec des lieux identifiables et des interactions immédiates.
+
+CYBERPUNK
+Pour les matériaux, les lumières, les hologrammes et l'ambiance futuriste.
+
+Ne pas copier les ressources graphiques protégées de ces univers.
+
+Créer une identité originale.
+
+---
+
+9. STRUCTURE VISUELLE DE LA VILLE
+
+L'interface principale doit représenter une grande ville en coupe.
+
+NIVEAU SUPÉRIEUR : LE CIEL
+
+- Skyline futuriste.
+- Éclairages nocturnes.
+- Drones.
+- Antennes.
+- Publicités holographiques discrètes.
+- Animations d'ambiance.
+
+NIVEAU CENTRAL : LES BÂTIMENTS
+
+Chaque bâtiment est identifiable par sa silhouette et sa couleur.
+
+AI.GENCY :
+Tour de bureaux élégante.
+
+ARE.IA.CENTER :
+Tour informatique centrale.
+
+BANK.IA :
+Banque futuriste sécurisée.
+
+MARKET.IA :
+Centre commercial.
+
+FACTORY.IA :
+Usine robotisée.
+
+TRAFFIC.IA :
+Tour de communication.
+
+CONTRACT.IA :
+Bureaux de négociation.
+
+SUBSCRIPTION.IA :
+Centre de services.
+
+R&D.IA :
+Laboratoire scientifique.
+
+MEDIA.IA :
+Studio de production.
+
+PLUGIN.STORE.IA :
+Boutique technologique.
+
+WEB.ESTATE.IA :
+Centre de serveurs.
+
+OPPORTUNITY.LAB :
+Laboratoire d'exploration.
+
+CCC.CONNECT HUB :
+Tour de connexion aux appareils.
+
+DUMP & INCINERATOR :
+Complexe industriel de recyclage.
+
+NIVEAU SOUTERRAIN
+
+AI.DEPTH.CENTMINE.
+
+Créer plusieurs galeries souterraines.
+
+Chaque galerie accueille des mineurs spécialisés.
+
+Ajouter :
+
+- Rails.
+- Wagonnets.
+- Cristaux.
+- Ascenseurs.
+- Machines.
+- Terminaux.
+- Éclairages.
+- Robots mineurs.
+
+---
+
+10. STYLE GRAPHIQUE
+
+PALETTE
+
+Couleurs principales :
+
+- Bleu nuit.
+- Anthracite.
+- Noir profond.
+- Bleu électrique.
+- Cyan.
+- Cuivre.
+- Or doux.
+
+Couleurs fonctionnelles :
+
+- Vert : réussite.
+- Orange : activité.
+- Rouge : erreur.
+- Bleu : information.
+- Gris : inactif.
+
+Éviter les couleurs excessivement saturées sur toute l'interface.
+
+FORMES
+
+- Bâtiments aux silhouettes simples.
+- Panneaux arrondis.
+- Boutons larges.
+- Icônes immédiatement reconnaissables.
+- Bordures discrètes.
+- Effets lumineux modérés.
+
+TYPOGRAPHIE
+
+- Moderne.
+- Lisible.
+- Sans surcharge décorative.
+- Hiérarchie visuelle claire.
+
+OBJECTIF
+
+L'interface doit être agréable à regarder pendant plusieurs heures.
+
+Elle doit rester lisible sur un ordinateur portable.
+
+---
+
+11. 🤖 DESIGN DES 94 ROBOTS
+
+Créer un langage graphique commun.
+
+Tous les robots appartiennent au même univers.
+
+Ils possèdent :
+
+- Une silhouette reconnaissable.
+- Une tête expressive.
+- Un corps compact.
+- Des membres simples.
+- Des animations fluides.
+- Une tenue liée à leur profession.
+- Une couleur liée à leur bâtiment.
+
+EXEMPLES
+
+Mineur :
+Casque, lampe et pioche.
+
+Banquier :
+Tenue élégante, tablette et badge.
+
+Développeur :
+Écran holographique et outils.
+
+Commercial :
+Dossier et terminal.
+
+Technicien :
+Casque et tournevis.
+
+Éboueur :
+Combinaison industrielle et conteneur.
+
+Scientifique :
+Blouse futuriste et scanner.
+
+Communicant :
+Antenne et console.
+
+Les personnages doivent être adorables sans rendre l'interface enfantine.
+
+Le résultat doit évoquer un jeu de gestion premium.
+
+---
+
+12. SYSTÈME D'ANIMATIONS
+
+Chaque agent possède plusieurs états.
+
+IDLE
+WALK
+WORK
+SEARCH
+THINK
+COMMUNICATE
+SUCCESS
+ERROR
+PAUSE
+SLEEP
+WAIT_APPROVAL
+
+Ajouter les animations spécialisées.
+
+MINEURS
+
+- Marcher dans les galeries.
+- Scanner.
+- Creuser.
+- Examiner un cristal.
+- Transporter un wagonnet.
+- Revenir au poste de contrôle.
+
+EMPLOYÉS
+
+- Utiliser un ordinateur.
+- Lire un dossier.
+- Communiquer.
+- Se déplacer.
+- Analyser un écran.
+
+BANQUIERS
+
+- Vérifier des transactions.
+- Examiner un coffre.
+- Contrôler les opérations.
+- Signaler une anomalie.
+
+TECHNICIENS
+
+- Réparer.
+- Nettoyer.
+- Surveiller les machines.
+- Transporter des composants.
+
+DÉVELOPPEURS
+
+- Programmer.
+- Tester.
+- Compiler.
+- Inspecter les erreurs.
+
+Les animations peuvent utiliser des spritesheets, des animations 2D ou des ressources équivalentes adaptées au moteur retenu.
+
+Une animation ne prouve jamais qu'une mission a réellement été exécutée.
+
+---
+
+13. MOTEUR VISUEL ÉVÉNEMENTIEL
+
+L'interface doit réagir aux états du logiciel.
+
+Exemple :
+
+AGENT REÇOIT UNE MISSION
+          ↓
+ÉTAT = WORKING
+          ↓
+ANIMATION = TRAVAIL
+          ↓
+MISSION TERMINÉE
+          ↓
+ÉTAT = SUCCESS
+          ↓
+ANIMATION = RÉUSSITE
+          ↓
+RÉSULTAT ENREGISTRÉ
+
+En cas d'erreur :
+
+MISSION ÉCHOUÉE
+       ↓
+ÉTAT = ERROR
+       ↓
+ANIMATION D'ERREUR
+       ↓
+NOTIFICATION
+       ↓
+JOURNAL D'INCIDENT
+
+Ne jamais fabriquer de faux événements pour donner l'impression que les agents travaillent.
+
+Des animations d'ambiance sont autorisées, mais elles doivent être distinguées de l'exécution réelle.
+
+---
+
+14. INTERACTIONS AVEC LES ROBOTS
+
+Chaque robot doit être cliquable.
+
+Un clic ouvre une fiche contenant :
+
+- Nom.
+- Bâtiment.
+- Profession.
+- État.
+- Mission actuelle.
+- Missions terminées.
+- Outils.
+- Permissions.
+- Résultats.
+- Coûts.
+- Historique.
+- Chatbot facultatif.
+
+Prévoir un bouton :
+
+CONFIER UNE MISSION
+
+Les missions proposées doivent correspondre aux compétences et autorisations de l'agent.
+
+---
+
+15. COMMANDES PRINCIPALES
+
+L'interface doit comporter :
+
+🟢 DÉMARRER L'ENTREPRISE
+
+Active les activités autorisées d'AI.GENCY.
+
+🟡 DÉMARRER LE MINAGE
+
+Active uniquement CENTMINE.
+
+🔵 DÉMARRER TOUT
+
+Active les activités autorisées.
+
+🟠 PAUSE
+
+Suspend les activités concernées.
+
+🔴 ARRÊTER
+
+Interrompt les opérations automatisées concernées.
+
+⚙️ PARAMÈTRES
+
+Ouvre les réglages.
+
+🔗 APPAREILS CCC
+
+Ouvre CCC.CONNECT HUB.
+
+🏦 FINANCES
+
+Ouvre BANK.IA.
+
+🛡️ ARRÊT D'URGENCE
+
+Interrompt les opérations automatisées et révoque les exécutions en attente lorsque cela est techniquement possible.
+
+Les opérations financières restent soumises à leurs validations spécifiques.
+
+---
+
+16. PERSONNALISATION
+
+Créer un système de personnalisation avancé.
+
+L'utilisateur doit pouvoir modifier :
+
+- Le thème.
+- Les couleurs.
+- Les bâtiments.
+- Les robots.
+- Les accessoires.
+- Les animations.
+- Les effets sonores.
+- La musique d'ambiance.
+- La disposition des panneaux.
+- La taille des éléments.
+- Les niveaux de détail.
+- Les notifications.
+
+Prévoir trois préréglages graphiques :
+
+ÉCO
+
+Animations réduites et faible consommation.
+
+NORMAL
+
+Équilibre entre esthétique et performances.
+
+MAX
+
+Animations détaillées et effets visuels avancés.
+
+Prévoir un mode sans animations et une option de réduction des mouvements.
+
+Les préférences doivent être conservées après redémarrage.
+
+---
+
+17. TABLEAU DE BORD FINANCIER
+
+Créer un panneau central :
+
+IA TOWN — REVENUE CONTROL
+
+Afficher séparément :
+
+1. Opportunités détectées.
+2. Revenus prévisionnels.
+3. Revenus déclarés.
+4. Revenus confirmés.
+5. Fonds encaissés.
+6. Dépenses.
+7. Résultat net.
+8. Abonnements actifs.
+9. Ventes réelles.
+10. Coûts des agents.
+
+Les valeurs doivent provenir de données traçables.
+
+Aucun montant fictif ne doit apparaître comme un revenu réel.
+
+Les données de démonstration doivent porter une indication visible :
+
+MODE DÉMONSTRATION.
+
+---
+
+18. CCC.CONNECT HUB
+
+Respecter les règles fondamentales CCC.
+
+Prévoir :
+
+- Windows.
+- Android smartphone.
+- Android tablette.
+- Wear OS.
+- Google TV compatible.
+- Appairage sécurisé par QR code.
+- Synchronisation.
+- Widgets.
+- Chatbot facultatif.
+- Connexions locales.
+- Connexions distantes sécurisées.
+
+EXEMPLE D'UTILISATION
+
+Depuis un téléphone :
+
+1. Ouvrir le widget IA TOWN.
+2. Consulter les agents actifs.
+3. Voir les revenus confirmés.
+4. Consulter les alertes.
+5. Mettre CENTMINE en pause.
+6. Recevoir la confirmation du PC.
+
+Ne jamais afficher une commande comme exécutée avant sa confirmation.
+
+Les fonctions doivent être adaptées aux capacités de chaque plateforme.
+
+---
+
+19. RÈGLES CCC OBLIGATOIRES
+
+Lire le document :
+
+"CCC_REGLES_FONDAMENTALES.txt"
+
+Respecter :
+
+1. Multiplateforme.
+2. Appairage par QR code.
+3. Synchronisation sécurisée.
+4. IA facultative par application.
+5. Interface centrale CCC.
+6. Widgets adaptés.
+7. Socle commun CCC CORE.
+8. Ergonomie, sécurité, performances et tests.
+
+IA TOWN reste une application de l'écosystème CCC.
+
+Elle ne remplace pas automatiquement le hub principal CCC.
+
+---
+
+20. SÉCURITÉ ET AUTORISATIONS
+
+Les agents ne doivent pas :
+
+- Inventer des revenus.
+- Fabriquer de faux paiements.
+- Créer de faux comptes.
+- Produire de faux avis.
+- Générer de faux clics.
+- Envoyer du spam.
+- Contourner les protections des plateformes.
+- Utiliser des données personnelles sans autorisation.
+- Engager des dépenses sans validation.
+- Effectuer des virements non autorisés.
+- Supprimer des fichiers personnels arbitrairement.
+- Publier des contenus sans droits.
+
+Prévoir :
+
+- Permissions granulaires.
+- Historique des actions.
+- Gestion sécurisée des secrets.
+- Sauvegardes.
+- Révocation des accès.
+- Arrêt d'urgence.
+- Contrôle des coûts.
+
+---
+
+21. ORDRE DE DÉVELOPPEMENT OBLIGATOIRE
+
+PHASE 01 — AUDIT
+
+Inspecter les projets existants.
+
+Inventorier les agents et composants.
+
+Exécuter les tests disponibles.
+
+Créer la documentation d'audit.
+
+PHASE 02 — ARCHITECTURE
+
+Créer le noyau IA TOWN.
+
+Définir les contrats entre bâtiments.
+
+Créer le registre des agents.
+
+Créer le moteur de missions.
+
+Créer le système d'événements.
+
+PHASE 03 — AGENTS EXISTANTS
+
+Réparer et finaliser :
+
+- AI.GENCY.
+- AI.DEPTH.CENTMINE.
+
+Préserver leurs données et fonctionnalités.
+
+PHASE 04 — INFRASTRUCTURE TECHNIQUE
+
+Finaliser :
+
+- ARE.IA.CENTER.
+- Gestion des permissions.
+- Connecteurs IA.
+- Navigateurs intégrés.
+- Stockage.
+- Supervision.
+
+PHASE 05 — AGENTS ÉCONOMIQUES
+
+Développer progressivement :
+
+- OPPORTUNITY.LAB.
+- FACTORY.IA.
+- MARKET.IA.
+- BANK.IA.
+- REVENUE.ENGINE.
+
+Construire un premier circuit commercial complet.
+
+PHASE 06 — DIVERSIFICATION
+
+Développer :
+
+- TRAFFIC.IA.
+- CONTRACT.IA.
+- SUBSCRIPTION.IA.
+- R&D.IA.
+- MEDIA.IA.
+- PLUGIN.STORE.IA.
+- WEB.ESTATE.IA.
+
+PHASE 07 — ENTRETIEN
+
+Finaliser DUMP & INCINERATOR.
+
+PHASE 08 — CONNECTIVITÉ
+
+Développer CCC.CONNECT HUB.
+
+Commencer par Windows et Android.
+
+Ajouter progressivement les autres plateformes.
+
+PHASE 09 — INTERFACE VISUELLE
+
+Construire :
+
+- La ville.
+- Les bâtiments.
+- Les étages.
+- Les galeries.
+- Les panneaux.
+- Les menus.
+- Les commandes.
+
+Créer une première interface navigable rapidement, puis l'enrichir sans bloquer le développement fonctionnel.
+
+PHASE 10 — PERSONNAGES
+
+Créer les 94 identités visuelles.
+
+Mutualiser les éléments graphiques lorsque possible.
+
+PHASE 11 — ANIMATIONS
+
+Créer les états animés.
+
+Connecter les animations aux événements réels.
+
+Optimiser les performances.
+
+PHASE 12 — PERSONNALISATION
+
+Ajouter les thèmes, préréglages et options graphiques.
+
+PHASE 13 — APPLICATION WINDOWS
+
+Préparer :
+
+"IA_TOWN.exe"
+
+Objectifs :
+
+- Application autonome.
+- Lancement par double-clic.
+- Icône officielle.
+- Stockage persistant.
+- Raccourci bureau.
+- Gestion des erreurs.
+- Compilation reproductible.
+- Tests Windows.
+
+Ne pas déclarer l'exécutable fonctionnel sans l'avoir testé.
+
+PHASE 14 — BÊTA
+
+Exécuter :
+
+- Tests unitaires.
+- Tests d'intégration.
+- Tests des agents.
+- Tests des missions.
+- Tests des permissions.
+- Tests des données.
+- Tests de synchronisation.
+- Tests graphiques.
+- Tests de performances.
+- Tests de sécurité.
+
+Corriger les problèmes détectés.
+
+---
+
+22. TESTS OBLIGATOIRES DES AGENTS
+
+Chaque rôle doit disposer d'une fiche de validation.
+
+Vérifier :
+
+1. Son enregistrement.
+2. Son activation.
+3. Ses outils.
+4. Ses permissions.
+5. Ses missions.
+6. Ses résultats.
+7. Ses erreurs.
+8. Ses journaux.
+9. Sa persistance.
+10. Son état visuel.
+
+Un rôle ne doit être déclaré opérationnel que lorsque les fonctions annoncées ont été vérifiées.
+
+---
+
+23. CRITÈRES DE QUALITÉ DE L'INTERFACE
+
+L'interface doit être :
+
+- Fluide.
+- Ergonomique.
+- Cohérente.
+- Personnalisable.
+- Accessible.
+- Adaptable à la taille de l'écran.
+- Économe en ressources.
+- Facile à comprendre.
+- Agréable à utiliser quotidiennement.
+
+INTERDICTIONS GRAPHIQUES
+
+Éviter :
+
+- Les centaines de boutons visibles simultanément.
+- Les panneaux inutilement complexes.
+- Les textes minuscules.
+- Les animations excessives.
+- Les fenêtres qui se superposent sans organisation.
+- Les informations financières ambiguës.
+- Les robots qui semblent travailler alors qu'aucune mission n'est active.
+
+---
+
+24. SAUVEGARDE ET CONTINUITÉ
+
+Maintenir les fichiers :
+
+"IA_TOWN_AUDIT.md"
+
+"IA_TOWN_ARCHITECTURE.md"
+
+"IA_TOWN_AGENTS.md"
+
+"IA_TOWN_ROADMAP.md"
+
+"IA_TOWN_PROGRESS.md"
+
+"IA_TOWN_DESIGN_SYSTEM.md"
+
+"IA_TOWN_TEST_REPORT.md"
+
+À chaque session :
+
+1. Lire l'état du projet.
+2. Vérifier les dernières modifications.
+3. Identifier la tâche suivante.
+4. Implémenter.
+5. Tester.
+6. Corriger.
+7. Documenter.
+8. Préparer la reprise.
+
+Ne jamais prétendre avoir effectué une opération non exécutée.
+
+---
+
+25. CRITÈRES DE RÉUSSITE
+
+IA TOWN atteindra son objectif lorsque :
+
+- Les 94 rôles seront enregistrés et documentés.
+- Les agents annoncés comme opérationnels auront passé leurs tests.
+- Les bâtiments seront fonctionnellement intégrés.
+- AI.GENCY et CENTMINE conserveront leurs fonctionnalités.
+- Les commandes de démarrage seront indépendantes.
+- Le système de missions sera opérationnel.
+- Les navigateurs intégrés fonctionneront.
+- Les données persisteront.
+- Les revenus réels seront vérifiables.
+- Les coûts seront contrôlés.
+- L'interface sera interactive.
+- Les robots seront animés.
+- Les animations refléteront les états réels.
+- Les connexions CCC seront testées.
+- La version Windows pourra être installée et exécutée.
+
+Les fonctionnalités non terminées devront être clairement signalées.
+
+---
+
+26. ORDRE DE PRIORITÉ ABSOLU
+
+Ne sacrifie jamais les fonctionnalités pour l'esthétique.
+
+Ne sacrifie jamais non plus l'ergonomie au profit d'une architecture technique invisible.
+
+Travaille sur deux axes complémentaires :
+
+AXE A — FONCTIONNEL
+
+Agents → Missions → Outils → Résultats → Revenus → Tests.
+
+AXE B — VISUEL
+
+Bâtiments → Personnages → Animations → Interactions → Personnalisation → Optimisation.
+
+Les deux axes doivent converger dans la même application.
+
+---
+
+27. PREMIÈRE EXÉCUTION DEMANDÉE
+
+Commence immédiatement par :
+
+1. Vérifier l'accès aux dépôts.
+2. Auditer les projets existants.
+3. Inventorier les 94 rôles.
+4. Identifier ceux déjà implémentés.
+5. Définir l'architecture commune.
+6. Créer le registre des agents.
+7. Préparer le système d'événements.
+8. Construire un premier prototype visuel navigable.
+9. Relier au moins un agent existant à son personnage animé.
+10. Exécuter les tests disponibles.
+11. Documenter précisément le résultat.
+
+Si tu ne peux pas accéder au dépôt ou exécuter les outils nécessaires, indique le blocage au lieu d'inventer une réalisation.
+
+Ne réponds pas uniquement par un plan : réalise les modifications que ton environnement permet réellement, puis fournis les preuves et résultats des tests.
+
+---
+
+🏙️ VISION FINALE
+
+L'utilisateur ouvre IA TOWN.
+
+Il découvre une ville cyberpunk vivante.
+
+Dans les bureaux, les employés IA travaillent.
+
+Dans les laboratoires, les chercheurs analysent les opportunités.
+
+Dans les usines, les robots fabriquent des produits numériques.
+
+Dans les boutiques, les agents supervisent les ventes.
+
+Dans la banque, les robots contrôlent les transactions.
+
+Dans les galeries souterraines, les mineurs recherchent des opportunités.
+
+Dans la tour CCC.CONNECT HUB, les techniciens synchronisent les appareils.
+
+Tous les bâtiments communiquent avec ARE.IA.CENTER.
+
+L'utilisateur peut observer la ville, cliquer sur les robots, consulter les missions et contrôler les activités.
+
+L'interface doit être aussi simple à utiliser qu'un jeu de gestion accessible, tout en reposant sur une véritable infrastructure logicielle.
+
+IA TOWN
+
+UNE VILLE NUMÉRIQUE VIVANTE.
+
+16 BÂTIMENTS.
+
+94 RÔLES SPÉCIALISÉS.
+
+UNE INFRASTRUCTURE COMMUNE.
+
+DES ACTIVITÉS ÉCONOMIQUES RÉELLES.
+
+MISSION : CONSTRUIRE, TESTER, INTÉGRER ET FINALISER IA TOWN.
