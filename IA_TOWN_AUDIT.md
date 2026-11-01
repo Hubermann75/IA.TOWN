@@ -48,4 +48,3 @@
 - **Composants ABSENTS :** 0
 - **Dépendances externes privées (GitHub API) :** 1 (Documentée, substitution native 100% fonctionnelle).
 - **Fiabilité du code :** 21/21 tests unitaires validés, zéro régression, typage TypeScript strict sans warning.
-

@@ -47,4 +47,3 @@ export async function requestAgentProposal(agentId: string, mission: string): Pr
   });
   return readJson<AgentTaskProposal>(response);
 }
-

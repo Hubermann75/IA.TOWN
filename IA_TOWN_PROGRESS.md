@@ -33,4 +33,3 @@
 - **Terminaux CCC Connect Synchronisés :** 5 appareils (Windows 11, Pixel 9 Pro, Galaxy Tab, Watch 6, Sony TV)
 - **Temps Moyen d'Exécution Téléchargement :** 1.2 seconde
 - **Taux de Succès des Tests Unitaires :** 100% (21/21 tests passés)
-

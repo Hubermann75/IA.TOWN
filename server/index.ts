@@ -21,4 +21,3 @@ app.get('*', (_request, response) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`IA TOWN server listening on port ${port}`);
 });
-

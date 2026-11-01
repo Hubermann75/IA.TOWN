@@ -249,4 +249,3 @@
 92. **92. TV.BRIDGE** (Type B) — Passerelle d'affichage mural pour Google TV (masquage soldes privés).
 93. **93. CCC.APP.MANAGER** (Type B) — Gestionnaire du cycle de vie et de la mémoire des applications CCC.
 94. **94. CONNECTION.GUARD** (Type B) — Pare-feu cryptographique, chiffrement AES-256 et contrôle RBAC.
-

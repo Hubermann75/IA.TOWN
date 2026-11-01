@@ -28,4 +28,3 @@ En développement, Vite monte les routes API. Pour le serveur de production, ex�
 Le dépôt ne contient pas encore de système de comptes ou d’authentification administrateur. L’activation d’une clé serveur sur un site public pourrait permettre à des visiteurs d’utiliser son quota. Garde l’option désactivée sur un déploiement public jusqu’à l’ajout d’une authentification et d’un contrôle de budget adaptés.
 
 La réponse du modèle est une proposition non vérifiée. Elle ne constitue pas une preuve d’exécution, de paiement, de connexion, de conformité ou de résultat externe.
-
