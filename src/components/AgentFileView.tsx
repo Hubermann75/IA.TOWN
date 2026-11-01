@@ -5,9 +5,11 @@
  * Showcases the 16 universal DNA robot models and the complete roster of 94 agents
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AGENT_REGISTRY } from '../data/agentRegistry';
-import { AgentRecord } from '../types/town';
+import type { AgentRecord } from '../types/town';
+import { getAgentRuntimeStatus, requestAgentProposal } from '../logic/agentRuntimeClient';
+import type { AgentRuntimeStatus, AgentTaskProposal } from '../logic/agentRuntimeClient';
 import { RobotAvatar, RobotRoleDesign } from './RobotAvatar';
 import { soundEngine } from '../utils/soundEngine';
 import { 
@@ -20,12 +22,10 @@ import {
   Activity, 
   DollarSign,
   Zap,
-  CheckCircle2,
   Lock,
   Building2,
   Layers,
   Send,
-  RotateCcw
 } from 'lucide-react';
 
 const VISUAL_ROLES_CATALOG: { role: RobotRoleDesign; title: string; building: string; desc: string }[] = [
@@ -52,7 +52,33 @@ export const AgentFileView: React.FC = () => {
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('ALL');
   const [selectedAgentId, setSelectedAgentId] = useState<string>(AGENT_REGISTRY[0].id);
   const [newMissionText, setNewMissionText] = useState('');
-  const [missionSentNotice, setMissionSentNotice] = useState<string | null>(null);
+  const [runtimeStatus, setRuntimeStatus] = useState<AgentRuntimeStatus | null>(null);
+  const [runtimeCheckFailed, setRuntimeCheckFailed] = useState(false);
+  const [agentProposal, setAgentProposal] = useState<AgentTaskProposal | null>(null);
+  const [missionError, setMissionError] = useState<string | null>(null);
+  const [isSubmittingMission, setIsSubmittingMission] = useState(false);
+  const missionRequestVersion = useRef(0);
+
+  useEffect(() => {
+    let mounted = true;
+    getAgentRuntimeStatus()
+      .then(status => {
+        if (mounted) setRuntimeStatus(status);
+      })
+      .catch(() => {
+        if (mounted) setRuntimeCheckFailed(true);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    missionRequestVersion.current += 1;
+    setAgentProposal(null);
+    setMissionError(null);
+    setIsSubmittingMission(false);
+  }, [selectedAgentId]);
 
   const selectedAgent: AgentRecord = AGENT_REGISTRY.find(a => a.id === selectedAgentId) || AGENT_REGISTRY[0];
 
@@ -69,14 +95,44 @@ export const AgentFileView: React.FC = () => {
     return matchesSearch;
   });
 
-  const handleSendMission = (e: React.FormEvent) => {
+  const handleSendMission = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newMissionText.trim()) return;
-    soundEngine.playSuccess();
-    setMissionSentNotice(`Ordre opérationnel transmis à ${selectedAgent.name} [Réf: MS-${Math.floor(Math.random() * 9000 + 1000)}]`);
-    setNewMissionText('');
-    setTimeout(() => setMissionSentNotice(null), 4000);
+    const mission = newMissionText.trim();
+    if (!mission || isSubmittingMission || selectedAgent.type === 'TYPE_B_SERVICE' || !runtimeStatus?.available) return;
+
+    const requestVersion = ++missionRequestVersion.current;
+    setIsSubmittingMission(true);
+    setMissionError(null);
+    setAgentProposal(null);
+    try {
+      const proposal = await requestAgentProposal(selectedAgent.id, mission);
+      if (missionRequestVersion.current !== requestVersion) return;
+      setAgentProposal(proposal);
+      setNewMissionText('');
+      soundEngine.playSuccess();
+    } catch (error) {
+      if (missionRequestVersion.current === requestVersion) {
+        setMissionError(error instanceof Error ? error.message : 'La demande IA a échoué. Aucune action externe n’a été lancée.');
+        soundEngine.playAlert();
+      }
+    } finally {
+      if (missionRequestVersion.current === requestVersion) setIsSubmittingMission(false);
+    }
   };
+
+  const missionRuntimeMessage = selectedAgent.type === 'TYPE_B_SERVICE'
+    ? 'Ce profil demande un exécuteur déterministe dédié, qui n’est pas encore implémenté.'
+    : runtimeCheckFailed
+      ? 'Serveur IA inaccessible dans ce mode de lancement.'
+      : !runtimeStatus
+        ? 'Vérification de la disponibilité du moteur IA…'
+        : runtimeStatus.available
+          ? selectedAgent.type === 'TYPE_C_HYBRID'
+            ? `Gemini disponible (${runtimeStatus.model}). Le profil hybride n’a pas encore son exécuteur déterministe; seule une proposition textuelle sera produite.`
+            : `Gemini disponible côté serveur (${runtimeStatus.model}). La réponse sera une proposition; aucun outil externe n’est autorisé.`
+          : runtimeStatus.reason === 'KEY_MISSING'
+            ? 'Clé Gemini absente de la configuration serveur.'
+            : 'Moteur Gemini désactivé côté serveur.';
 
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#0A0F1E] text-slate-100 select-none">
@@ -205,7 +261,7 @@ export const AgentFileView: React.FC = () => {
                       {agent.status}
                     </span>
                     <span className="text-[9.5px] text-slate-500 font-mono-code mt-0.5 block">
-                      {agent.metrics.requestsHandled} req.
+                      {agent.metrics.requestsHandled} req. · démo
                     </span>
                   </div>
                 </div>
@@ -241,11 +297,11 @@ export const AgentFileView: React.FC = () => {
               </div>
 
               <div className="text-right">
-                <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 text-xs font-orbitron font-bold">
-                  {selectedAgent.status}
+                <span className="px-3 py-1 rounded-full bg-slate-700/40 border border-slate-600/60 text-slate-300 text-xs font-orbitron font-bold">
+                  PROFIL PRÉCHARGÉ
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono-code block mt-1">
-                  Type : {selectedAgent.type}
+                  Statut catalogue : {selectedAgent.status} · Type : {selectedAgent.type}
                 </span>
               </div>
             </div>
@@ -253,25 +309,25 @@ export const AgentFileView: React.FC = () => {
             {/* Telemetry & Specifications Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
               <div className="p-3 rounded-xl panel-town-standard">
-                <span className="text-[10px] uppercase font-mono-code text-slate-400 block">REQUÊTES TRAITÉES</span>
+                  <span className="text-[10px] uppercase font-mono-code text-slate-400 block">REQUÊTES DU PROFIL · DÉMO</span>
                 <span className="font-orbitron font-bold text-base text-amber-400 mt-1 block">
                   {selectedAgent.metrics.requestsHandled} ops
                 </span>
               </div>
               <div className="p-3 rounded-xl panel-town-standard">
-                <span className="text-[10px] uppercase font-mono-code text-slate-400 block">TAUX DE SUCCÈS</span>
+                  <span className="text-[10px] uppercase font-mono-code text-slate-400 block">TAUX HISTORIQUE · DÉMO</span>
                 <span className="font-orbitron font-bold text-base text-emerald-400 mt-1 block">
                   {selectedAgent.metrics.successRate} %
                 </span>
               </div>
               <div className="p-3 rounded-xl panel-town-standard">
-                <span className="text-[10px] uppercase font-mono-code text-slate-400 block">MISSIONS EXÉCUTÉES</span>
+                  <span className="text-[10px] uppercase font-mono-code text-slate-400 block">COMPTEUR HISTORIQUE · DÉMO</span>
                 <span className="font-orbitron font-bold text-base text-cyan-400 mt-1 block">
                   {selectedAgent.completedMissionsCount}
                 </span>
               </div>
               <div className="p-3 rounded-xl panel-town-standard">
-                <span className="text-[10px] uppercase font-mono-code text-slate-400 block">TEMPS RÉPONSE MOY.</span>
+                  <span className="text-[10px] uppercase font-mono-code text-slate-400 block">LATENCE HISTORIQUE · DÉMO</span>
                 <span className="font-orbitron font-bold text-base text-purple-400 mt-1 block">
                   {selectedAgent.metrics.avgExecutionTimeMs} ms
                 </span>
@@ -281,7 +337,7 @@ export const AgentFileView: React.FC = () => {
             {/* Mission & Functional Description */}
             <div className="p-3.5 rounded-xl panel-town-standard space-y-2">
               <span className="text-[10px] uppercase font-mono-code text-slate-400 block">
-                Mission Actuelle & Rôle Opérationnel
+                Mission du Profil Préchargé & Rôle Déclaré
               </span>
               <p className="text-xs text-white font-mono-code font-semibold">
                 &gt; {selectedAgent.currentMission}
@@ -294,7 +350,7 @@ export const AgentFileView: React.FC = () => {
             {/* Tools and Security Permissions */}
             <div className="p-3.5 rounded-xl panel-town-standard space-y-2">
               <span className="text-[10px] uppercase font-mono-code text-slate-400 block">
-                Outils Déployés & Permissions Système
+                Outils Déclarés & Permissions du Profil
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {selectedAgent.tools.map((tool) => (
@@ -320,39 +376,57 @@ export const AgentFileView: React.FC = () => {
             {/* Mission Dispatch Console */}
             <form onSubmit={handleSendMission} className="p-3.5 rounded-xl panel-town-standard space-y-2">
               <span className="text-[10px] uppercase font-mono-code text-slate-400 block">
-                Transmettre une Mission Directe
+                Demander une Proposition à l’Agent IA
               </span>
+              <div className={`rounded-lg border px-3 py-2 text-[11px] font-mono-code ${runtimeStatus?.available && selectedAgent.type !== 'TYPE_B_SERVICE' ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300' : 'border-amber-800 bg-amber-950/20 text-amber-300'}`}>
+                {missionRuntimeMessage}
+              </div>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={newMissionText}
                   onChange={(e) => setNewMissionText(e.target.value)}
-                  placeholder={`Assigner un ordre opérationnel à ${selectedAgent.name}...`}
+                  maxLength={2000}
+                  disabled={isSubmittingMission}
+                  placeholder={`Décrire une demande pour ${selectedAgent.name}...`}
                   className="flex-1 bg-[#0A0F1E] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 font-inter focus:outline-none focus:border-cyan-400"
                 />
                 <button
                   type="submit"
-                  className="btn-town-primary text-xs"
+                  disabled={!newMissionText.trim() || isSubmittingMission || selectedAgent.type === 'TYPE_B_SERVICE' || !runtimeStatus?.available}
+                  className="btn-town-primary text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  Envoyer
+                  {isSubmittingMission ? 'Analyse…' : 'Demander'}
                 </button>
               </div>
-              {missionSentNotice && (
-                <div className="text-xs font-mono-code text-emerald-400 flex items-center gap-1.5 pt-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{missionSentNotice}</span>
+              {missionError && (
+                <div role="alert" className="text-xs font-mono-code text-rose-300 pt-1">
+                  {missionError}
+                </div>
+              )}
+              {agentProposal && (
+                <div className="rounded-xl border border-cyan-800/70 bg-cyan-950/20 p-3 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono-code text-cyan-200">
+                    <span>PROPOSITION IA · {agentProposal.agentName} · {agentProposal.model}</span>
+                    <span>{agentProposal.durationMs} ms</span>
+                  </div>
+                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{agentProposal.output}</p>
+                  <p className="text-[10px] font-mono-code text-amber-300">
+                    Proposition à valider. Aucune action externe n’a été exécutée.
+                  </p>
                 </div>
               )}
             </form>
           </div>
 
           <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500 font-mono-code">
-            <span>REGISTRE OFFICIEL CODEX COLLECTION CONNECT V3.0</span>
-            <span className="text-cyan-400">HASH: 0x94_AGENTS_VERIFIED</span>
+            <span>CATALOGUE DE 94 PROFILS PRÉCHARGÉS</span>
+            <span className="text-amber-300">MÉTRIQUES DU PROFIL · DÉMO</span>
           </div>
         </div>
       </div>
     </div>
   );
 };
+

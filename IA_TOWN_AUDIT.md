@@ -2,7 +2,9 @@
 **Version :** V5.0 Master Edition  
 **Date d'audit :** 31 Octobre 2026  
 **Auteur :** Lead Architecture IA TOWN & CCC CORE  
-**Statut Global :** CONFORME & OPÉRATIONNEL  
+**Statut Global :** À REVALIDER SUR ENVIRONNEMENT LIVE  
+
+> **Portée :** les statuts « testé » ci-dessous sont ceux déclarés par l’audit historique du dépôt. Ils ne constituent pas une preuve d’intégration bancaire, de minage réel, d’appareils connectés ou de déploiement. Les chiffres opérationnels doivent rester démonstratifs tant qu’ils ne sont pas accompagnés de sources authentifiées. Le runtime d’agents ajouté dans la branche `codex/agent-runtime` renvoie des propositions de modèle uniquement; il n’exécute pas les outils listés dans le registre.
 
 ---
 
@@ -46,3 +48,4 @@
 - **Composants ABSENTS :** 0
 - **Dépendances externes privées (GitHub API) :** 1 (Documentée, substitution native 100% fonctionnelle).
 - **Fiabilité du code :** 21/21 tests unitaires validés, zéro régression, typage TypeScript strict sans warning.
+

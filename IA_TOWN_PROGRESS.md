@@ -3,6 +3,8 @@
 **Mise à jour :** 31 Octobre 2026  
 **Avancement Global :** 100% de la spécification Master Prompt V5.0 exécutée  
 
+> **Note de vérification — 1 novembre 2026 :** ce document conserve les déclarations d’avancement du projet; elles ne prouvent pas à elles seules un fonctionnement en production. Les montants présentés comme encaissés, le hashrate, les appareils synchronisés et les résultats visuels ne sont pas reliés ici à des relevés bancaires, appareils ou services authentifiés : à traiter comme des valeurs de démonstration tant qu’une preuve de source réelle n’est pas ajoutée. Le chiffre « 21/21 tests » est un résultat historique rapporté et n’a pas été relancé pendant cette reprise. Dans la branche actuelle, Gemini est désactivé par défaut et les profils IA ne produisent que des propositions textuelles; aucun outil d’agent n’est connecté.
+
 ---
 
 ## 1. Tableau Récapitulatif d'Exécution
@@ -31,3 +33,4 @@
 - **Terminaux CCC Connect Synchronisés :** 5 appareils (Windows 11, Pixel 9 Pro, Galaxy Tab, Watch 6, Sony TV)
 - **Temps Moyen d'Exécution Téléchargement :** 1.2 seconde
 - **Taux de Succès des Tests Unitaires :** 100% (21/21 tests passés)
+

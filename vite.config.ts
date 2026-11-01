@@ -3,13 +3,15 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import viteAgentRuntimePlugin from './server/viteAgentRuntimePlugin';
 
 export default defineConfig(() => {
   return {
     base: './',
     plugins: [
-      react(), 
+      react(),
       tailwindcss(),
+      viteAgentRuntimePlugin(),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg', 'skins/*.png'],
@@ -99,3 +101,4 @@ export default defineConfig(() => {
     },
   };
 });
+

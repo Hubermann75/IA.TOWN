@@ -4,6 +4,8 @@
 **Répartition :** 16 Bâtiments  
 **Typologie :** 18 Type A (IA) · 58 Type B (Services Déterministes) · 18 Type C (Hybrides)  
 
+> **Portée du registre :** les rôles, outils et permissions ci-dessous décrivent les profils prévus. Leur présence dans ce fichier ne signifie pas que les outils sont implémentés ou que les permissions sont accordées. Dans la branche `codex/agent-runtime`, Gemini fournit une proposition textuelle pour les profils Type A et C; les profils Type B et les actions externes n’ont pas d’exécuteur connecté.
+
 ---
 
 ## 1. ARE.IA.CENTER (5 Agents : #01 à #05)
@@ -247,3 +249,4 @@
 92. **92. TV.BRIDGE** (Type B) — Passerelle d'affichage mural pour Google TV (masquage soldes privés).
 93. **93. CCC.APP.MANAGER** (Type B) — Gestionnaire du cycle de vie et de la mémoire des applications CCC.
 94. **94. CONNECTION.GUARD** (Type B) — Pare-feu cryptographique, chiffrement AES-256 et contrôle RBAC.
+
