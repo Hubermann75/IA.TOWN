@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { GoogleGenAI } from '@google/genai';
 import { randomUUID } from 'node:crypto';
 import express, { type Request } from 'express';
-import { AGENT_REGISTRY } from '../src/data/agentRegistry';
+import { AGENT_REGISTRY } from '../src/data/agentRegistry.ts';
 
 const MAX_MISSION_LENGTH = 2000;
 const RATE_WINDOW_MS = 60_000;

@@ -2,7 +2,10 @@
 **Date d'Exécution :** 31 Octobre 2026  
 **Moteur de Test Unitaire :** Node.js Test Runner natif (`tsx --test`)  
 **Moteur de Test Visuel / E2E :** Playwright CLI (`playwright-cli`)  
-**Résultat Global :** **21 / 21 TESTS UNITAIRES VALIDÉS (100% SUCCÈS)**  
+**Résultat historique du 31 octobre :** **21 / 21 tests unitaires validés**
+**Revalidation du 1 novembre :** **31 / 31 tests passés; lint et build réussis**
+
+> **Revalidation — 1 novembre 2026 :** `npm test` passe 31/31 tests, `npm run lint` passe et `npm run build` passe pour le client et le serveur. Le contrôle HTTP local de `/api/agents/status` retourne `available: false` et `reason: DISABLED`, comme attendu sans activation Gemini. Les résultats Playwright et les intégrations externes ci-dessous restent ceux de l’exécution historique du 31 octobre; ils n’ont pas été relancés. Le build signale un bundle initial supérieur à 500 kB.
 
 ---
 

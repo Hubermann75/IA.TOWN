@@ -10,6 +10,7 @@
     "start": "node server-dist/index.js",
     "preview": "vite preview",
     "clean": "node scripts/clean.mjs",
+    "test": "tsx --test src/logic/*.test.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
@@ -36,7 +37,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.2",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",

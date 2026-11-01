@@ -6,6 +6,8 @@
 
 > **Portée :** les statuts « testé » ci-dessous sont ceux déclarés par l’audit historique du dépôt. Ils ne constituent pas une preuve d’intégration bancaire, de minage réel, d’appareils connectés ou de déploiement. Les chiffres opérationnels doivent rester démonstratifs tant qu’ils ne sont pas accompagnés de sources authentifiées. Le runtime d’agents ajouté dans la branche `codex/agent-runtime` renvoie des propositions de modèle uniquement; il n’exécute pas les outils listés dans le registre.
 
+> **Revalidation technique — 1 novembre 2026 :** `npm test` passe 31/31, `npm run lint` passe et `npm run build` produit le client et le serveur. Un contrôle HTTP local confirme que `/api/agents/status` répond avec Gemini désactivé par défaut. Playwright, fournisseur Gemini réel, comptes, paiements, appareils et déploiement public n’ont pas été validés lors de cette revalidation. Le build signale encore un bundle JavaScript supérieur à 500 kB.
+
 ---
 
 ## 1. Grille d'évaluation des Statuts
@@ -21,7 +23,7 @@
 
 | Composant / Module | Périmètre Fonctionnel | Statut d'Audit | Justification / Preuves |
 | :--- | :--- | :--- | :--- |
-| **REVENUE.ENGINE V3.0** | Comparaison d'activités, ségrégation stricte des fonds encaissés, exclusion totale des gains fictifs. | **EXISTANT ET TESTÉ** | 21/21 tests unitaires passés. Fonctions `calculateNetProfit`, `calculateROI`, `isProfitabilityAudited` validées. |
+| **REVENUE.ENGINE V3.0** | Comparaison d'activités, ségrégation stricte des fonds encaissés, exclusion totale des gains fictifs. | **EXISTANT ET TESTÉ** | Tests historiques 21/21; revalidation actuelle 31/31 au 1 novembre 2026. Fonctions `calculateNetProfit`, `calculateROI`, `isProfitabilityAudited` validées. |
 | **COST.GUARD** | Suivi des dépenses réelles, plafonds journaliers API (60€) et mensuels serveurs (250€), coupure auto. | **EXISTANT ET TESTÉ** | Déclenchement automatique des alertes en cas de dépassement budget. Test unitaire validé. |
 | **16 BÂTIMENTS OFFICIELS** | Coupe visuelle style Cyberpunk Shelter des 16 bâtiments (ARENA, GENCY, R&D, FACTORY, MARKET, TRAFFIC, BANK, CENTMINE, CONTRACT, SUBSCRIPTION, DUMP, MEDIA, PLUGIN, ESTATE, LAB, CCC HUB). | **EXISTANT ET TESTÉ** | Rendu interactif 60 FPS dans `CyberpunkTownView.tsx`, inspection et sélection active. |
 | **AI.DEPTH.CENTMINE** | Galeries souterraines (Gold, Quartz, Cobalt), mineurs robots, wagonnets animés, hashrate 142 MH/s et Mine Guard. | **EXISTANT ET TESTÉ** | Composant `CyberpunkTownView` intègre les 3 galeries animées, hashrate dynamique régulé par simulationTick. |
@@ -47,4 +49,4 @@
 - **Composants PARTIELS :** 0
 - **Composants ABSENTS :** 0
 - **Dépendances externes privées (GitHub API) :** 1 (Documentée, substitution native 100% fonctionnelle).
-- **Fiabilité du code :** 21/21 tests unitaires validés, zéro régression, typage TypeScript strict sans warning.
+- **Fiabilité du code :** les 21/21 tests ci-dessus sont historiques; la revalidation du 1 novembre 2026 passe 31/31 tests, le lint TypeScript et le build client/serveur.

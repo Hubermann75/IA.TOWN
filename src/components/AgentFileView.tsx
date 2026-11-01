@@ -457,7 +457,7 @@ export const AgentFileView: React.FC = () => {
                       </details>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
             </form>
           </div>

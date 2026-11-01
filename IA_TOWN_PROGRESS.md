@@ -3,7 +3,7 @@
 **Mise à jour :** 31 Octobre 2026  
 **Avancement Global :** 100% de la spécification Master Prompt V5.0 exécutée  
 
-> **Note de vérification — 1 novembre 2026 :** ce document conserve les déclarations d’avancement du projet; elles ne prouvent pas à elles seules un fonctionnement en production. Les montants présentés comme encaissés, le hashrate, les appareils synchronisés et les résultats visuels ne sont pas reliés ici à des relevés bancaires, appareils ou services authentifiés : à traiter comme des valeurs de démonstration tant qu’une preuve de source réelle n’est pas ajoutée. Le chiffre « 21/21 tests » est un résultat historique rapporté et n’a pas été relancé pendant cette reprise. Dans la branche actuelle, Gemini est désactivé par défaut et les profils IA ne produisent que des propositions textuelles; aucun outil d’agent n’est connecté.
+> **Note de vérification — 1 novembre 2026 :** ce document conserve les déclarations d’avancement du projet; elles ne prouvent pas à elles seules un fonctionnement en production. Les montants présentés comme encaissés, le hashrate, les appareils synchronisés et les résultats visuels restent des données de démonstration tant qu’ils ne sont pas reliés à des sources authentifiées. Revalidation du dépôt : `npm test` passe 31/31, `npm run lint` passe, `npm run build` passe et le contrôle HTTP local confirme que Gemini reste désactivé par défaut. Ces contrôles ne valident pas les intégrations bancaires, les appareils, l’appel Gemini réel ou les parcours visuels E2E. Le runtime ne connecte aucun outil d’agent.
 
 ---
 
@@ -15,7 +15,7 @@
 | **Mines AI.DEPTH.CENTMINE** | 3 galeries souterraines, régulation thermique, Mine Guard | **100%** | Hashrate 142 MH/s actif, wagonnets animés |
 | **Registre des Agents** | 94 agents avec typologie Type A, B et C | **100%** | Registre complet de 01 à 94 avec métriques |
 | **Passerelles CCC (#85 à #94)** | Rôles dédiés Windows, Android, Wear OS, Google TV | **100%** | Appairage QR, commandes distantes, RBAC |
-| **Moteur Économique** | Zéro gain fictif, ségrégation stricte des fonds encaissés | **100%** | 21/21 tests unitaires validés avec node:test |
+| **Moteur Économique** | Zéro gain fictif, ségrégation stricte des fonds encaissés | **100%** | La suite globale passe 31/31 tests au 1 novembre 2026 |
 | **Cost Guard & Plafonds** | 60€/jour API, 250€/mois hébergement, suspension auto | **100%** | Mécanisme d'alerte et coupure testé |
 | **Chaîne Commerciale** | 10 étapes mesurables + génération de fichiers réels | **100%** | Script shell, certificat JSON, facture textuelle |
 | **Synchronisation d'États** | Windows 11 ⇄ Android 15, Last-Write-Wins, file hors-ligne | **100%** | Réconciliation delta instantanée validée |
@@ -32,4 +32,4 @@
 - **Hashrate Galeries CentMine :** 142.4 MH/s (Consommation régulée)
 - **Terminaux CCC Connect Synchronisés :** 5 appareils (Windows 11, Pixel 9 Pro, Galaxy Tab, Watch 6, Sony TV)
 - **Temps Moyen d'Exécution Téléchargement :** 1.2 seconde
-- **Taux de Succès des Tests Unitaires :** 100% (21/21 tests passés)
+- **Taux de Succès des Tests Unitaires :** 100% (31/31 tests passés le 1 novembre 2026)

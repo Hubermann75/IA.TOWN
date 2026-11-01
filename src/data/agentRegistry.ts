@@ -8,7 +8,7 @@
  * - TYPE_C_HYBRID: Algorithme déterministe enrichi par inférence IA
  */
 
-import { AgentRecord } from '../types/town';
+import { AgentRecord } from '../types/town.ts';
 
 export const AGENT_REGISTRY: AgentRecord[] = [
   // ==========================================
