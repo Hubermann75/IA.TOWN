@@ -21,6 +21,8 @@ Ne place pas la clé dans une variable `VITE_*`, dans le navigateur, dans le dé
 - Les missions sont limitées à 2 000 caractères et à six demandes par minute par connexion serveur.
 - Les profils `TYPE_B_SERVICE` sont refusés tant qu’un exécuteur déterministe dédié n’est pas implémenté.
 
+La fiche d’agent garde les cinq dernières propositions de chaque profil en mémoire dans la page courante, avec la mission correspondante. Cet historique n’est pas écrit dans `localStorage` ni enregistré côté serveur; il disparaît à la fermeture ou au rechargement de la page et peut être effacé pour un profil.
+
 En développement, Vite monte les routes API. Pour le serveur de production, exécute `npm run build`, puis `npm start` avec les mêmes variables d’environnement.
 
 ## Limites de sécurité et d’exploitation

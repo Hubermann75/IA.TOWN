@@ -47,6 +47,13 @@ const VISUAL_ROLES_CATALOG: { role: RobotRoleDesign; title: string; building: st
   { role: 'EXPLORATEUR', title: 'Explorateur', building: 'OPPORTUNITY.LAB', desc: 'Veille marché temps réel et détection de niches rentables' },
 ];
 
+const MAX_SESSION_PROPOSALS_PER_AGENT = 5;
+
+interface SessionProposalEntry {
+  mission: string;
+  proposal: AgentTaskProposal;
+}
+
 export const AgentFileView: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('ALL');
@@ -54,7 +61,7 @@ export const AgentFileView: React.FC = () => {
   const [newMissionText, setNewMissionText] = useState('');
   const [runtimeStatus, setRuntimeStatus] = useState<AgentRuntimeStatus | null>(null);
   const [runtimeCheckFailed, setRuntimeCheckFailed] = useState(false);
-  const [agentProposal, setAgentProposal] = useState<AgentTaskProposal | null>(null);
+  const [proposalHistoryByAgent, setProposalHistoryByAgent] = useState<Record<string, SessionProposalEntry[]>>({});
   const [missionError, setMissionError] = useState<string | null>(null);
   const [isSubmittingMission, setIsSubmittingMission] = useState(false);
   const missionRequestVersion = useRef(0);
@@ -75,12 +82,12 @@ export const AgentFileView: React.FC = () => {
 
   useEffect(() => {
     missionRequestVersion.current += 1;
-    setAgentProposal(null);
     setMissionError(null);
     setIsSubmittingMission(false);
   }, [selectedAgentId]);
 
   const selectedAgent: AgentRecord = AGENT_REGISTRY.find(a => a.id === selectedAgentId) || AGENT_REGISTRY[0];
+  const selectedAgentProposals = proposalHistoryByAgent[selectedAgentId] ?? [];
 
   const filteredAgents = AGENT_REGISTRY.filter(agent => {
     const matchesSearch = 
@@ -103,11 +110,16 @@ export const AgentFileView: React.FC = () => {
     const requestVersion = ++missionRequestVersion.current;
     setIsSubmittingMission(true);
     setMissionError(null);
-    setAgentProposal(null);
     try {
       const proposal = await requestAgentProposal(selectedAgent.id, mission);
       if (missionRequestVersion.current !== requestVersion) return;
-      setAgentProposal(proposal);
+      setProposalHistoryByAgent(current => ({
+        ...current,
+        [selectedAgent.id]: [
+          { mission, proposal },
+          ...(current[selectedAgent.id] ?? []),
+        ].slice(0, MAX_SESSION_PROPOSALS_PER_AGENT),
+      }));
       setNewMissionText('');
       soundEngine.playSuccess();
     } catch (error) {
@@ -405,16 +417,46 @@ export const AgentFileView: React.FC = () => {
                   {missionError}
                 </div>
               )}
-              {agentProposal && (
-                <div className="rounded-xl border border-cyan-800/70 bg-cyan-950/20 p-3 space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono-code text-cyan-200">
-                    <span>PROPOSITION IA · {agentProposal.agentName} · {agentProposal.model}</span>
-                    <span>{agentProposal.durationMs} ms</span>
+              {selectedAgentProposals.length > 0 && (
+                <section aria-label="Historique des propositions de cette session" className="rounded-xl border border-cyan-900/70 bg-cyan-950/10 p-3 space-y-2">
+                  <header className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-[10px] font-mono-code text-cyan-200">
+                        PROPOSITIONS DE CETTE SESSION · {selectedAgentProposals.length}/{MAX_SESSION_PROPOSALS_PER_AGENT}
+                      </h3>
+                      <p className="text-[9px] text-slate-500">En mémoire jusqu’à la fermeture de cette page.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setProposalHistoryByAgent(current => {
+                        const next = { ...current };
+                        delete next[selectedAgent.id];
+                        return next;
+                      })}
+                      className="text-[10px] font-mono-code text-slate-400 hover:text-white underline underline-offset-2"
+                    >
+                      Effacer pour cet agent
+                    </button>
+                  </header>
+                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                    {selectedAgentProposals.map(({ mission, proposal }, index) => (
+                      <details
+                        key={proposal.requestId}
+                        open={index === 0}
+                        className="rounded-lg border border-slate-800 bg-[#0A0F1E]/80 p-2"
+                      >
+                        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-[10px] font-mono-code text-cyan-200">
+                          <span>{proposal.agentName} · {proposal.model}</span>
+                          <span>{new Date(proposal.createdAt).toLocaleString('fr-FR')} · {proposal.durationMs} ms</span>
+                        </summary>
+                        <p className="mt-2 text-[10px] text-slate-400">Mission : {mission}</p>
+                        <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{proposal.output}</p>
+                        <p className="mt-2 text-[10px] font-mono-code text-amber-300">
+                          Proposition à valider. Aucune action externe n’a été exécutée.
+                        </p>
+                      </details>
+                    ))}
                   </div>
-                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{agentProposal.output}</p>
-                  <p className="text-[10px] font-mono-code text-amber-300">
-                    Proposition à valider. Aucune action externe n’a été exécutée.
-                  </p>
                 </div>
               )}
             </form>
