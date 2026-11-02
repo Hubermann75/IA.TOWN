@@ -4,11 +4,20 @@ import { GoogleGenAI } from '@google/genai';
 import { randomUUID } from 'node:crypto';
 import express, { type Request } from 'express';
 import { AGENT_REGISTRY } from '../src/data/agentRegistry.ts';
+import { authorizeAgentCapability } from '../src/logic/agentPermissionEngine.ts';
+import {
+  BOAMP_PROSPECTOR_AGENT_ID,
+  BOAMP_PROSPECTOR_AGENT_NAME,
+  parseProspectorMission,
+} from '../src/logic/agentPublicOpportunity.ts';
+import { BoampProspectorError, createBoampProspectorResult } from '../src/logic/boampProspector.ts';
 
 const MAX_MISSION_LENGTH = 2000;
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT_PER_WINDOW = 6;
 const rateLimitBuckets = new Map<string, { startedAt: number; count: number }>();
+const PUBLIC_SEARCH_RATE_LIMIT_PER_WINDOW = 12;
+const publicSearchRateLimitBuckets = new Map<string, { startedAt: number; count: number }>();
 
 type RuntimeReason = 'DISABLED' | 'KEY_MISSING';
 
@@ -29,19 +38,42 @@ function getRuntimeStatus() {
   };
 }
 
-function consumeRateLimit(request: Request): boolean {
+function consumeRateLimitFromBuckets(
+  request: Request,
+  buckets: Map<string, { startedAt: number; count: number }>,
+  limit: number,
+): boolean {
   const now = Date.now();
   const clientKey = request.ip || request.socket.remoteAddress || 'unknown';
-  const current = rateLimitBuckets.get(clientKey);
+  const current = buckets.get(clientKey);
 
   if (!current || now - current.startedAt >= RATE_WINDOW_MS) {
-    rateLimitBuckets.set(clientKey, { startedAt: now, count: 1 });
+    buckets.set(clientKey, { startedAt: now, count: 1 });
     return true;
   }
 
-  if (current.count >= RATE_LIMIT_PER_WINDOW) return false;
+  if (current.count >= limit) return false;
   current.count += 1;
   return true;
+}
+
+function consumeRateLimit(request: Request): boolean {
+  return consumeRateLimitFromBuckets(request, rateLimitBuckets, RATE_LIMIT_PER_WINDOW);
+}
+
+function consumePublicSearchRateLimit(request: Request): boolean {
+  return consumeRateLimitFromBuckets(request, publicSearchRateLimitBuckets, PUBLIC_SEARCH_RATE_LIMIT_PER_WINDOW);
+}
+
+function sameOriginAllowed(request: Request): boolean {
+  const origin = request.get('origin');
+  const host = request.get('host');
+  if (!origin || !host) return true;
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
 }
 
 function getRequestAgent(agentId: unknown) {
@@ -53,7 +85,11 @@ function isMissionInput(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && value.length <= MAX_MISSION_LENGTH;
 }
 
-export function createAgentRuntimeRouter() {
+export interface AgentRuntimeRouterDependencies {
+  prospect?: (mission: string) => ReturnType<typeof createBoampProspectorResult>;
+}
+
+export function createAgentRuntimeRouter(dependencies: AgentRuntimeRouterDependencies = {}) {
   const router = express.Router();
   router.use(express.json({ limit: '8kb' }));
 
@@ -62,18 +98,9 @@ export function createAgentRuntimeRouter() {
   });
 
   router.post('/propose', async (request, response) => {
-    const origin = request.get('origin');
-    const host = request.get('host');
-    if (origin && host) {
-      try {
-        if (new URL(origin).host !== host) {
-          response.status(403).json({ error: 'Origine de requête refusée.' });
-          return;
-        }
-      } catch {
-        response.status(403).json({ error: 'En-tête Origin invalide.' });
-        return;
-      }
+    if (!sameOriginAllowed(request)) {
+      response.status(403).json({ error: 'Origine de requête refusée.' });
+      return;
     }
 
     const runtime = getRuntimeStatus();
@@ -179,6 +206,48 @@ export function createAgentRuntimeRouter() {
       response.status(502).json({
         error: 'Le fournisseur IA n’a pas répondu. La demande n’a produit aucune action externe.',
       });
+    }
+  });
+
+  router.post('/prospect', async (request, response) => {
+    if (!sameOriginAllowed(request)) {
+      response.status(403).json({ error: 'Origine de requête refusée.' });
+      return;
+    }
+
+    const { agentId, mission } = request.body ?? {};
+    const agent = getRequestAgent(agentId);
+    if (!agent || agent.id !== BOAMP_PROSPECTOR_AGENT_ID || agent.name !== BOAMP_PROSPECTOR_AGENT_NAME
+      || agent.type !== 'TYPE_B_SERVICE' || !authorizeAgentCapability(agent, 'REMOTE_PUBLIC_TENDER_SEARCH')) {
+      response.status(403).json({ error: 'Ce profil ne possède pas le connecteur public de prospection.' });
+      return;
+    }
+
+    if (!isMissionInput(mission)) {
+      response.status(400).json({ error: `La mission doit contenir entre 1 et ${MAX_MISSION_LENGTH} caractères.` });
+      return;
+    }
+    try {
+      parseProspectorMission(mission);
+    } catch (error) {
+      response.status(400).json({ error: error instanceof Error ? error.message : 'Mission de recherche invalide.' });
+      return;
+    }
+
+    if (!consumePublicSearchRateLimit(request)) {
+      response.setHeader('Retry-After', '60');
+      response.status(429).json({ error: `Limite atteinte : ${PUBLIC_SEARCH_RATE_LIMIT_PER_WINDOW} recherches publiques par minute pour cette connexion.` });
+      return;
+    }
+
+    try {
+      const result = await (dependencies.prospect ?? createBoampProspectorResult)(mission);
+      response.json(result);
+    } catch (error) {
+      const message = error instanceof BoampProspectorError
+        ? error.message
+        : 'La recherche BOAMP a échoué. Aucune opportunité n’a été confirmée.';
+      response.status(502).json({ error: message });
     }
   });
 

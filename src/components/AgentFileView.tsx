@@ -8,7 +8,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AGENT_REGISTRY } from '../data/agentRegistry';
 import type { AgentRecord } from '../types/town';
-import { getAgentRuntimeStatus, requestAgentProposal } from '../logic/agentRuntimeClient';
+import { getAgentRuntimeStatus, requestAgentProposal, requestAgentPublicSearch } from '../logic/agentRuntimeClient';
 import type { AgentRuntimeStatus } from '../logic/agentRuntimeClient';
 import {
   claimNextAgentTask,
@@ -18,6 +18,7 @@ import {
   failAgentTask,
   getAgentVisualState,
   recordAgentDeterministicResult,
+  recordAgentPublicOpportunityResult,
   recordAgentProposal,
   recoverInterruptedAgentTasks,
   reviewAgentResult,
@@ -200,7 +201,12 @@ export const AgentFileView: React.FC = () => {
             runningTask.mission,
           ),
         )
-        : recordAgentProposal(runningTask, await requestAgentProposal(runningTask.agentId, runningTask.mission));
+        : runningTask.executionMode === 'REMOTE_READ_ONLY'
+          ? recordAgentPublicOpportunityResult(
+            runningTask,
+            await requestAgentPublicSearch(runningTask.agentId, runningTask.mission),
+          )
+          : recordAgentProposal(runningTask, await requestAgentProposal(runningTask.agentId, runningTask.mission));
       setAgentTasks(current => current.map(task =>
         task.id === completedTask.id && task.status === 'RUNNING' ? completedTask : task,
       ));
@@ -257,7 +263,9 @@ export const AgentFileView: React.FC = () => {
     }));
   };
 
-  const missionRuntimeMessage = selectedAgent.type === 'TYPE_B_SERVICE'
+  const missionRuntimeMessage = selectedAgentExecutionMode === 'REMOTE_READ_ONLY'
+    ? 'PROSPECTOR peut lancer une recherche BOAMP en lecture seule depuis le serveur IA TOWN. L’envoi des mots-clés et l’accès Internet ont lieu au lancement; seuls des avis publics ouverts avec échéance ISO interprétable sont retenus. L’accès à l’API est annoncé gratuit, les coûts d’hébergement/réseau ne sont pas mesurés. Le résultat n’est ni une validation juridique ni une promesse de revenu.'
+    : selectedAgent.type === 'TYPE_B_SERVICE'
     ? selectedAgentExecutionMode === 'DETERMINISTIC'
       ? 'Calculateur local disponible. Utilisez le JSON indiqué; le résultat reste une projection et ne modifie aucun registre financier.'
       : 'Aucun exécuteur déterministe n’est branché. Vous pouvez conserver la mission en file; elle ne sera pas exécutée.'
@@ -523,17 +531,19 @@ export const AgentFileView: React.FC = () => {
                   {selectedAgentVisualState === 'INACTIVE' ? 'INACTIF' : selectedAgentVisualState === 'QUEUED' ? 'EN FILE' : selectedAgentVisualState === 'WORKING' ? 'TRAVAIL' : selectedAgentVisualState === 'WAITING_REVIEW' ? 'ATTENTE DE REVUE' : 'ERREUR'}
                 </span>
               </div>
-              <div className={`rounded-lg border px-3 py-2 text-[11px] font-mono-code ${runtimeStatus?.available && selectedAgent.type !== 'TYPE_B_SERVICE' ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300' : 'border-amber-800 bg-amber-950/20 text-amber-300'}`}>
+              <div className={`rounded-lg border px-3 py-2 text-[11px] font-mono-code ${selectedAgentExecutionMode === 'REMOTE_READ_ONLY' ? 'border-cyan-800 bg-cyan-950/30 text-cyan-200' : runtimeStatus?.available && selectedAgent.type !== 'TYPE_B_SERVICE' ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300' : 'border-amber-800 bg-amber-950/20 text-amber-300'}`}>
                 {missionRuntimeMessage}
               </div>
               <div className="flex gap-2">
                 <textarea
-                  rows={selectedAgentExecutionMode === 'DETERMINISTIC' ? 4 : 2}
+                  rows={selectedAgentExecutionMode === 'DETERMINISTIC' || selectedAgentExecutionMode === 'REMOTE_READ_ONLY' ? 4 : 2}
                   value={newMissionText}
                   onChange={(e) => setNewMissionText(e.target.value)}
                   maxLength={2000}
                   disabled={isSubmittingMission}
-                  placeholder={selectedAgentExecutionMode === 'DETERMINISTIC'
+                  placeholder={selectedAgentExecutionMode === 'REMOTE_READ_ONLY'
+                    ? '{"keywords":"développement application web"}'
+                    : selectedAgentExecutionMode === 'DETERMINISTIC'
                     ? '{"unitPriceEur":29,"variableCostPerUnitEur":4.75,"fixedCostsEur":100,"plannedUnits":10}'
                     : `Décrire une mission pour ${selectedAgent.name}...`}
                   className="flex-1 resize-y bg-[#0A0F1E] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 font-inter focus:outline-none focus:border-cyan-400"
@@ -559,7 +569,7 @@ export const AgentFileView: React.FC = () => {
                   Mettre en file
                 </button>
               </div>
-              {selectedAgentExecutionMode === 'DETERMINISTIC' && selectedAgentTools[0] && (
+              {(selectedAgentExecutionMode === 'DETERMINISTIC' || selectedAgentExecutionMode === 'REMOTE_READ_ONLY') && selectedAgentTools[0] && (
                 <button
                   type="button"
                   onClick={() => setNewMissionText(selectedAgentTools[0].exampleMission)}
@@ -570,7 +580,7 @@ export const AgentFileView: React.FC = () => {
               )}
               <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-2 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono-code text-slate-400">
-                  <span>{queuedDeterministicTaskCount} exécution(s) locale(s) · {queuedProposalTaskCount} proposition(s) Gemini · {queuedUnavailableTaskCount} sans exécuteur</span>
+                  <span>{queuedDeterministicTaskCount} exécution(s) locale(s) · {agentTasks.filter(task => task.status === 'QUEUED' && task.executionMode === 'REMOTE_READ_ONLY').length} recherche(s) publique(s) · {queuedProposalTaskCount} proposition(s) Gemini · {queuedUnavailableTaskCount} sans exécuteur</span>
                   <span>{runtimeStatus?.available ? 'Coût Gemini non mesuré' : 'Gemini indisponible'}</span>
                 </div>
                 <button
@@ -583,7 +593,9 @@ export const AgentFileView: React.FC = () => {
                     ? 'Mission en cours…'
                     : nextRunnableTask?.executionMode === 'DETERMINISTIC'
                       ? `Exécuter la prochaine mission locale (${queuedDeterministicTaskCount})`
-                      : `Demander la prochaine proposition Gemini (${queuedProposalTaskCount})`}
+                      : nextRunnableTask?.executionMode === 'REMOTE_READ_ONLY'
+                        ? 'Lancer la recherche BOAMP publique'
+                        : `Demander la prochaine proposition Gemini (${queuedProposalTaskCount})`}
                 </button>
                 {queuedProposalTaskCount > 0 && !runtimeStatus?.available && (
                   <p className="text-[9px] text-amber-300">Les missions restent en file jusqu’à la disponibilité du fournisseur. L’appel peut être facturé par Google et son coût n’est pas mesuré par IA TOWN.</p>
@@ -641,6 +653,26 @@ export const AgentFileView: React.FC = () => {
                             <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{task.result.output}</p>
                             <p className="mt-2 text-[10px] font-mono-code text-amber-300">
                               Résultat local issu des données fournies. Aucune recherche web, publication, dépense, vente ni écriture bancaire n’a été exécutée.
+                            </p>
+                          </>
+                        )}
+                        {task.result?.resultKind === 'REMOTE_READ_ONLY_RESULT' && (
+                          <>
+                            <p className="mt-2 text-[9px] text-slate-500">Connecteur distant en lecture seule · collecte {new Date(task.result.data.fetchedAt).toLocaleString('fr-FR')} · {task.result.durationMs} ms</p>
+                            <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{task.result.output}</p>
+                            <a href={task.result.data.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-[10px] text-cyan-300 underline">Ouvrir le jeu public BOAMP</a>
+                            {task.result.data.opportunities.length > 0 && (
+                              <ul className="mt-2 space-y-2">
+                                {task.result.data.opportunities.map(notice => (
+                                  <li key={notice.noticeId} className="rounded border border-slate-800 bg-slate-950/60 p-2 text-[10px]">
+                                    <a href={notice.sourceUrl} target="_blank" rel="noreferrer" className="text-cyan-200 underline">{notice.title}</a>
+                                    <p className="mt-1 text-slate-400">Avis {notice.noticeId} · échéance source {notice.deadlineAt}{notice.contractType ? ` · ${notice.contractType}` : ''}</p>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            <p className="mt-2 text-[10px] font-mono-code text-amber-300">
+                              Les données publiques peuvent être retardées et contenir des renseignements personnels dans les titres. Vérifiez l’avis source et votre admissibilité avant toute décision. Aucun contact, candidature, paiement ou engagement n’a été effectué.
                             </p>
                           </>
                         )}

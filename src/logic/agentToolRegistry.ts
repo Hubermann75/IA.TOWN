@@ -9,6 +9,7 @@ import {
   type AgentDeterministicResult,
 } from './agentDeterministicExecutors';
 import { authorizeAgentCapability, getEnforcedCapabilities, type AgentCapability } from './agentPermissionEngine';
+import { BOAMP_PROSPECTOR_TOOL_ID } from './agentPublicOpportunity';
 
 export interface AgentToolDefinition {
   id: string;
@@ -17,12 +18,13 @@ export interface AgentToolDefinition {
   allowedAgentId: string;
   allowedAgentName: string;
   requiredCapability: AgentCapability;
-  missionType: 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING';
+  missionType: 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH';
+  executionMode: 'DETERMINISTIC' | 'REMOTE_READ_ONLY';
   exampleMission: string;
   associatedTest: string;
   sideEffects: false;
   costEur: 0;
-  execute: (agent: AgentRecord, taskId: string, mission: string, now?: string) => AgentDeterministicResult;
+  execute?: (agent: AgentRecord, taskId: string, mission: string, now?: string) => AgentDeterministicResult;
 }
 
 export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
@@ -34,6 +36,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     allowedAgentName: 'MINE.GUARD',
     requiredCapability: 'LOCAL_CENTMINE_RISK_SCREENING',
     missionType: 'MINE_RISK_SCREENING',
+    executionMode: 'DETERMINISTIC',
     exampleMission: JSON.stringify({ opportunityName: 'Mission de test', sourceName: 'Page publique', sourceUrl: 'https://example.org/terms', observedAt: '2026-11-02', activityType: 'FREELANCE', payoutTermsProvided: true, platformRulesReviewed: true, accountCredentialsRequested: false, upfrontFeeRequired: false, guaranteedIncomeClaim: false, sensitiveDataRequested: false, prohibitedAutomationRequired: false, dataRightsClear: true }, null, 2),
     associatedTest: 'agentTools.test.ts::mine guard blocks red flags and never declares legal approval',
     sideEffects: false,
@@ -48,6 +51,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     allowedAgentName: 'SCOUT.AI',
     requiredCapability: 'LOCAL_DEMAND_EVIDENCE_ANALYSIS',
     missionType: 'DEMAND_EVIDENCE_ANALYSIS',
+    executionMode: 'DETERMINISTIC',
     exampleMission: JSON.stringify({ sources: [{ sourceName: 'Source publique', url: 'https://example.org/rapport', observedAt: '2026-11-02', signal: 'Exemple de signal documenté à remplacer par vos données', strength: 3 }] }, null, 2),
     associatedTest: 'agentTools.test.ts::demand evidence tool preserves provenance and never claims live verification',
     sideEffects: false,
@@ -62,6 +66,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     allowedAgentName: 'NICHE.DRILLER',
     requiredCapability: 'LOCAL_COMPETITOR_DATA_ANALYSIS',
     missionType: 'COMPETITOR_DATA_ANALYSIS',
+    executionMode: 'DETERMINISTIC',
     exampleMission: JSON.stringify({ competitors: [{ name: 'Concurrent A', sourceUrl: 'https://example.org/offre-a', observedAt: '2026-11-02', priceEur: 19, features: ['Export CSV', 'Mode équipe'] }, { name: 'Concurrent B', sourceUrl: 'https://example.org/offre-b', observedAt: '2026-11-02', priceEur: 25, features: ['Export CSV'] }] }, null, 2),
     associatedTest: 'agentTools.test.ts::competitor comparison calls omissions potential listing gaps, not confirmed feature absence',
     sideEffects: false,
@@ -76,6 +81,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     allowedAgentName: 'MARGIN.PREDICTOR',
     requiredCapability: 'LOCAL_MARGIN_CALCULATION',
     missionType: 'MARGIN_ANALYSIS',
+    executionMode: 'DETERMINISTIC',
     exampleMission: JSON.stringify({ unitPriceEur: 29, variableCostPerUnitEur: 4.75, fixedCostsEur: 100, plannedUnits: 10 }, null, 2),
     associatedTest: 'agentTools.test.ts::margin calculator returns reproducible scenario values and zero confirmed revenue',
     sideEffects: false,
@@ -90,6 +96,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     allowedAgentName: 'PROTOTYPE.TRIGGER',
     requiredCapability: 'LOCAL_VALIDATION_PLANNING',
     missionType: 'VALIDATION_PLAN',
+    executionMode: 'DETERMINISTIC',
     exampleMission: JSON.stringify({ hypothesis: 'Des indépendants paieraient pour automatiser cette tâche', targetAudience: 'Indépendants francophones', method: 'INTERVIEWS', maxBudgetEur: 0, timeboxDays: 7, minimumResponses: 8 }, null, 2),
     associatedTest: 'agentTools.test.ts::validation planner creates a plan without executing tests, spending or contacting people',
     sideEffects: false,
@@ -104,11 +111,26 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     allowedAgentName: 'REVENUE.ENGINE',
     requiredCapability: 'LOCAL_PORTFOLIO_RANKING',
     missionType: 'PORTFOLIO_RANKING',
+    executionMode: 'DETERMINISTIC',
     exampleMission: JSON.stringify({ opportunities: [{ id: 'idee-1', name: 'Outil numérique', sourceCount: 3, deliveryReadinessPercent: 60, riskLevel: 2, unitPriceEur: 29, variableCostPerUnitEur: 5, fixedCostsEur: 100, plannedUnits: 10 }] }, null, 2),
     associatedTest: 'agentTools.test.ts::portfolio ranking uses a disclosed hypothesis score and zero confirmed revenue',
     sideEffects: false,
     costEur: 0,
     execute: runPortfolioRanking,
+  },
+  {
+    id: BOAMP_PROSPECTOR_TOOL_ID,
+    name: 'Recherche publique en lecture seule — BOAMP',
+    targetV6Role: { id: '14', name: 'PROSPECTOR', building: 'AI.DEPTH.CENTMINE' },
+    allowedAgentId: '39',
+    allowedAgentName: 'MINER.PRIME',
+    requiredCapability: 'REMOTE_PUBLIC_TENDER_SEARCH',
+    missionType: 'PUBLIC_OPPORTUNITY_SEARCH',
+    executionMode: 'REMOTE_READ_ONLY',
+    exampleMission: JSON.stringify({ keywords: 'développement application web' }, null, 2),
+    associatedTest: 'boampProspector.test.ts::public BOAMP search returns bounded, provenance-preserving open notices only',
+    sideEffects: false,
+    costEur: 0,
   },
 ];
 
@@ -120,8 +142,9 @@ export function getAgentTools(agent: AgentRecord): AgentToolDefinition[] {
   );
 }
 
-export function getAgentExecutionMode(agent: AgentRecord): 'DETERMINISTIC' | 'PROPOSAL_ONLY' | 'UNAVAILABLE' {
-  if (getAgentTools(agent).length > 0) return 'DETERMINISTIC';
+export function getAgentExecutionMode(agent: AgentRecord): 'DETERMINISTIC' | 'REMOTE_READ_ONLY' | 'PROPOSAL_ONLY' | 'UNAVAILABLE' {
+  const tool = getAgentTools(agent)[0];
+  if (tool) return tool.executionMode;
   return agent.type === 'TYPE_B_SERVICE' ? 'UNAVAILABLE' : 'PROPOSAL_ONLY';
 }
 
@@ -137,6 +160,8 @@ export function executeRegisteredAgentTool(
   now?: string,
 ): AgentDeterministicResult {
   const tool = getAgentTools(agent).find(candidate => candidate.id === toolId);
-  if (!tool) throw new Error('Aucun outil autorisé n’est enregistré pour ce profil.');
+  if (!tool || tool.executionMode !== 'DETERMINISTIC' || !tool.execute) {
+    throw new Error('Aucun exécuteur local déterministe autorisé n’est enregistré pour ce profil.');
+  }
   return tool.execute(agent, taskId, mission, now);
 }

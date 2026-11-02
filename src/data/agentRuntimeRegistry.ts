@@ -4,7 +4,7 @@ import { AGENT_TOOL_REGISTRY } from '../logic/agentToolRegistry';
 
 /**
  * Normalized execution metadata for each existing catalog profile.
- * This adapter makes missing capabilities explicit; it does not create tools.
+ * This adapter resolves profile grants to the registered local and read-only connectors.
  */
 export const AGENT_RUNTIME_REGISTRY: AgentRuntimeDefinition[] = AGENT_REGISTRY.map(
   buildAgentRuntimeDefinition,
@@ -36,8 +36,10 @@ export function validateAgentRuntimeRegistry(): { valid: boolean; issues: string
   ))) {
     issues.push('Une permission est appliquée sans outil et grant correspondants.');
   }
-  if (AGENT_RUNTIME_REGISTRY.some(agent => agent.executionMode === 'DETERMINISTIC' && agent.associatedTests.length === 0)) {
-    issues.push('Un profil déterministe ne référence aucun test associé.');
+  if (AGENT_RUNTIME_REGISTRY.some(agent =>
+    (agent.executionMode === 'DETERMINISTIC' || agent.executionMode === 'REMOTE_READ_ONLY') && agent.associatedTests.length === 0,
+  )) {
+    issues.push('Un profil avec exécuteur connecté ne référence aucun test associé.');
   }
   return { valid: issues.length === 0, issues };
 }

@@ -6,6 +6,7 @@
 import type { AgentRecord } from '../types/town';
 import type { AgentTaskProposal } from './agentRuntimeClient';
 import type { AgentDeterministicResult } from './agentDeterministicExecutors';
+import { isAgentPublicOpportunityResult, type AgentPublicOpportunityResult } from './agentPublicOpportunity';
 import { getAgentEnforcedCapabilities, getAgentExecutionMode, getAgentTools } from './agentToolRegistry';
 
 export const MAX_AGENT_MISSION_LENGTH = 2_000;
@@ -30,8 +31,8 @@ export type AgentVisualState =
   | 'WORKING'
   | 'WAITING_REVIEW'
   | 'ERROR';
-export type AgentExecutionMode = 'DETERMINISTIC' | 'PROPOSAL_ONLY' | 'UNAVAILABLE';
-export type AgentTaskResult = AgentTaskProposal | AgentDeterministicResult;
+export type AgentExecutionMode = 'DETERMINISTIC' | 'REMOTE_READ_ONLY' | 'PROPOSAL_ONLY' | 'UNAVAILABLE';
+export type AgentTaskResult = AgentTaskProposal | AgentDeterministicResult | AgentPublicOpportunityResult;
 
 export interface AgentRuntimeDefinition {
   id: string;
@@ -46,11 +47,11 @@ export interface AgentRuntimeDefinition {
   toolsAvailable: Array<{ name: string; connected: boolean; toolId?: string }>;
   permissions: { declared: string[]; enforced: string[] };
   model?: { provider: 'gemini'; mode: 'PROPOSAL_ONLY' };
-  acceptedMissions: Array<'TEXT_PROPOSAL' | 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING'>;
+  acceptedMissions: Array<'TEXT_PROPOSAL' | 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH'>;
   dependencies: string[];
   dependenciesVerified: false;
   budgetMaxEur: number | null;
-  budgetState: 'CONFIGURED_LOCAL_ONLY' | 'UNCONFIGURED';
+  budgetState: 'CONFIGURED_LOCAL_ONLY' | 'CONFIGURED_FREE_PUBLIC_SOURCE' | 'UNCONFIGURED';
   definitionState: 'LEGACY_CATALOG_ADAPTER';
   executionState: 'IDLE';
   history: Array<{ timestamp: string; event: string }>;
@@ -141,13 +142,17 @@ export function buildAgentRuntimeDefinition(agent: AgentRecord): AgentRuntimeDef
     ...(executionMode === 'PROPOSAL_ONLY' ? { model: { provider: 'gemini' as const, mode: 'PROPOSAL_ONLY' as const } } : {}),
     acceptedMissions: executionMode === 'PROPOSAL_ONLY'
       ? ['TEXT_PROPOSAL']
-      : executionMode === 'DETERMINISTIC'
+      : executionMode === 'DETERMINISTIC' || executionMode === 'REMOTE_READ_ONLY'
         ? connectedTools.map(tool => tool.missionType)
         : [],
     dependencies: [],
     dependenciesVerified: false,
-    budgetMaxEur: executionMode === 'DETERMINISTIC' ? 0 : null,
-    budgetState: executionMode === 'DETERMINISTIC' ? 'CONFIGURED_LOCAL_ONLY' : 'UNCONFIGURED',
+    budgetMaxEur: executionMode === 'DETERMINISTIC' || executionMode === 'REMOTE_READ_ONLY' ? 0 : null,
+    budgetState: executionMode === 'DETERMINISTIC'
+      ? 'CONFIGURED_LOCAL_ONLY'
+      : executionMode === 'REMOTE_READ_ONLY'
+        ? 'CONFIGURED_FREE_PUBLIC_SOURCE'
+        : 'UNCONFIGURED',
     definitionState: 'LEGACY_CATALOG_ADAPTER',
     executionState: 'IDLE',
     history: [],
@@ -194,7 +199,7 @@ export function createAgentTask(
     updatedAt: now,
     ...(options.deadlineAt ? { deadlineAt: options.deadlineAt } : {}),
     attempts: 0,
-    budgetMaxEur: executionMode === 'DETERMINISTIC' ? 0 : null,
+    budgetMaxEur: executionMode === 'DETERMINISTIC' || executionMode === 'REMOTE_READ_ONLY' ? 0 : null,
     providerCostEur: null,
     declaredTools: [...agent.tools],
     declaredPermissions: [...agent.permissions],
@@ -240,7 +245,9 @@ export function selectNextRunnableAgentTask(
 ): AgentTask | null {
   return tasks
     .filter(task => task.status === 'QUEUED'
-      && (task.executionMode === 'DETERMINISTIC' || (providerAvailable && task.executionMode === 'PROPOSAL_ONLY')))
+      && (task.executionMode === 'DETERMINISTIC'
+        || task.executionMode === 'REMOTE_READ_ONLY'
+        || (providerAvailable && task.executionMode === 'PROPOSAL_ONLY')))
     .slice()
     .sort((left, right) =>
       PRIORITY_RANK[right.priority] - PRIORITY_RANK[left.priority]
@@ -256,9 +263,12 @@ export function claimNextAgentTask(tasks: AgentTask[], now = new Date().toISOStr
   const next = selectNextRunnableAgentTask(tasks, providerAvailable);
 
   if (!next) return { tasks, claimedTask: null };
-  const claimedTask = transition(next, 'RUNNING', 'SYSTEM', next.executionMode === 'DETERMINISTIC'
+  const claimedMessage = next.executionMode === 'DETERMINISTIC'
     ? 'Exécuteur local réclamé par le moteur de missions.'
-    : 'Proposition demandée au fournisseur configuré.', now, {
+    : next.executionMode === 'REMOTE_READ_ONLY'
+      ? 'Recherche publique en lecture seule réclamée par le moteur de missions.'
+      : 'Proposition demandée au fournisseur configuré.';
+  const claimedTask = transition(next, 'RUNNING', 'SYSTEM', claimedMessage, now, {
     attempts: next.attempts + 1,
     error: undefined,
   });
@@ -299,6 +309,25 @@ export function recordAgentDeterministicResult(
     throw new Error('Le résultat est vide ou dépasse la limite de stockage.');
   }
   return transition(task, 'WAITING_REVIEW', 'SYSTEM', `Outil local ${result.toolId} exécuté; aucune action externe.`, now, {
+    result,
+    error: undefined,
+  });
+}
+
+export function recordAgentPublicOpportunityResult(
+  task: AgentTask,
+  result: AgentPublicOpportunityResult,
+  now = new Date().toISOString(),
+): AgentTask {
+  if (task.status !== 'RUNNING' || task.executionMode !== 'REMOTE_READ_ONLY') {
+    throw new Error('Cette mission n’est pas en cours dans un connecteur public en lecture seule.');
+  }
+  if (result.agentId !== task.agentId || !task.connectedTools.includes(result.toolId)
+    || result.resultKind !== 'REMOTE_READ_ONLY_RESULT' || result.externalActionExecuted !== false
+    || !isAgentPublicOpportunityResult(result)) {
+    throw new Error('Le résultat public ne correspond pas au profil ou au connecteur autorisé.');
+  }
+  return transition(task, 'WAITING_REVIEW', 'SYSTEM', `Connecteur public en lecture seule ${result.toolId} terminé; aucune action externe effectuée.`, now, {
     result,
     error: undefined,
   });

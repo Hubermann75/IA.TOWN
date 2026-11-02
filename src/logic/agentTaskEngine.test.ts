@@ -13,6 +13,7 @@ import {
   enqueueAgentTask,
   failAgentTask,
   recordAgentDeterministicResult,
+  recordAgentPublicOpportunityResult,
   recordAgentProposal,
   recoverInterruptedAgentTasks,
   retryFailedAgentTask,
@@ -83,7 +84,59 @@ test('normalized runtime registry covers 94 unique legacy profiles and only list
   assert.deepEqual(validateAgentRuntimeRegistry(), { valid: true, issues: [] });
   assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'PROPOSAL_ONLY').length, 36);
   assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'DETERMINISTIC').length, 6);
-  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'UNAVAILABLE').length, 52);
+  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'REMOTE_READ_ONLY').length, 1);
+  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'UNAVAILABLE').length, 51);
+});
+
+test('PROSPECTOR pilot queues a BOAMP read-only search and persists its sourced result for review', () => {
+  const agent = AGENT_REGISTRY.find(candidate => candidate.id === '39')!;
+  const mission = JSON.stringify({ keywords: 'développement application web' });
+  const queued = createAgentTask(agent, mission, { id: 'task-prospector', now: FIXED_NOW });
+  assert.equal(queued.executionMode, 'REMOTE_READ_ONLY');
+  assert.deepEqual(queued.connectedTools, ['centmine.prospector-boamp-search.v1']);
+  const running = claimNextAgentTask([queued], FIXED_NOW, false).claimedTask!;
+  assert.equal(running.status, 'RUNNING');
+  const result = {
+    requestId: 'boamp-request-1',
+    agentId: '39',
+    agentName: 'MINER.PRIME',
+    toolId: 'centmine.prospector-boamp-search.v1' as const,
+    createdAt: FIXED_NOW,
+    durationMs: 15,
+    output: 'Piste publique; aucune candidature déposée.',
+    resultKind: 'REMOTE_READ_ONLY_RESULT' as const,
+    externalActionExecuted: false as const,
+    data: {
+      dataKind: 'BOAMP_PUBLIC_TENDER_SEARCH' as const,
+      sourceName: 'BOAMP' as const,
+      sourceUrl: 'https://www.boamp.fr/explore/dataset/boamp/' as const,
+      verificationState: 'SOURCE_FETCHED_ELIGIBILITY_UNVERIFIED' as const,
+      apiAccessChargeEur: 0 as const,
+      hostingAndBandwidthCostMeasured: false as const,
+      keywords: 'développement application web',
+      fetchedAt: FIXED_NOW,
+      totalMatchedCount: 1,
+      recordsInspected: 1,
+      excludedNotOpenOrInvalid: 0,
+      omittedInspectedBeyondDisplayLimit: 0,
+      opportunities: [{
+        noticeId: '26-12345',
+        title: 'Création et maintenance d’un site web',
+        publishedAt: '2026-11-01T00:00:00.000Z',
+        deadlineAt: '2026-12-01T12:00:00.000Z',
+        contractType: 'Services',
+        sourceUrl: 'https://www.boamp.fr/pages/avis/?q=idweb%3A26-12345',
+      }],
+    },
+  };
+  const waiting = recordAgentPublicOpportunityResult(running, result, FIXED_NOW);
+  assert.equal(waiting.status, 'WAITING_REVIEW');
+  assert.equal(waiting.result?.resultKind, 'REMOTE_READ_ONLY_RESULT');
+  assert.equal(waiting.result?.externalActionExecuted, false);
+  const storage = memoryStorage();
+  assert.equal(saveAgentTasks([waiting], storage), true);
+  assert.equal(loadAgentTasks(storage)[0].result?.resultKind, 'REMOTE_READ_ONLY_RESULT');
+  assert.throws(() => recordAgentPublicOpportunityResult(running, { ...result, agentId: '38' }, FIXED_NOW));
 });
 
 test('task creation rejects empty missions and queues unsupported service roles without claiming them', () => {

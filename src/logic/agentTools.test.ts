@@ -85,12 +85,24 @@ test('the five V6 OPPORTUNITY.LAB targets have one role-bound local tool each', 
   assert.equal(new Set(AGENT_TOOL_REGISTRY.map(tool => tool.allowedAgentId)).size, AGENT_TOOL_REGISTRY.length);
   for (const tool of AGENT_TOOL_REGISTRY) {
     const agent = AGENT_REGISTRY.find(candidate => candidate.id === tool.allowedAgentId)!;
-    assert.equal(getAgentExecutionMode(agent), 'DETERMINISTIC');
+    assert.equal(getAgentExecutionMode(agent), tool.executionMode);
     assert.equal(getAgentTools(agent).length, 1);
     assert.deepEqual(buildAgentRuntimeDefinition(agent).associatedTests, [tool.associatedTest]);
     assert.equal(tool.sideEffects, false);
     assert.equal(tool.costEur, 0);
+    assert.equal(tool.executionMode === 'DETERMINISTIC' ? typeof tool.execute : tool.execute, tool.executionMode === 'DETERMINISTIC' ? 'function' : undefined);
   }
+});
+
+test('CENTMINE Prospector pilot is bound to the historical profile and a read-only V6 target', () => {
+  const prospector = AGENT_REGISTRY.find(agent => agent.id === '39')!;
+  const tool = getAgentTools(prospector)[0];
+  assert.equal(getAgentExecutionMode(prospector), 'REMOTE_READ_ONLY');
+  assert.equal(tool.executionMode, 'REMOTE_READ_ONLY');
+  assert.deepEqual(tool.targetV6Role, { id: '14', name: 'PROSPECTOR', building: 'AI.DEPTH.CENTMINE' });
+  assert.equal(authorizeAgentCapability(prospector, 'REMOTE_PUBLIC_TENDER_SEARCH'), true);
+  assert.equal(authorizeAgentCapability({ ...prospector, name: 'FORGED.PROFILE' }, 'REMOTE_PUBLIC_TENDER_SEARCH'), false);
+  assert.equal(tool.sideEffects, false);
 });
 
 test('demand evidence tool preserves provenance and never claims live verification', () => {
@@ -196,7 +208,7 @@ test('all registered local tools execute through the queue and their results sur
     getItem: key => values.get(key) ?? null,
     setItem: (key, value) => { values.set(key, value); },
   };
-  for (const [index, tool] of AGENT_TOOL_REGISTRY.entries()) {
+  for (const [index, tool] of AGENT_TOOL_REGISTRY.filter(candidate => candidate.executionMode === 'DETERMINISTIC').entries()) {
     const agent = AGENT_REGISTRY.find(candidate => candidate.id === tool.allowedAgentId)!;
     const task = createAgentTask(agent, tool.exampleMission, { id: `opportunity-task-${index}`, now: '2026-11-02T12:00:00.000Z' });
     const running = claimNextAgentTask([task], '2026-11-02T12:00:01.000Z').claimedTask!;

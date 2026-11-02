@@ -10,6 +10,7 @@ import {
   type AgentTaskStatus,
 } from './agentTaskEngine';
 import type { AgentTaskProposal } from './agentRuntimeClient';
+import { isAgentPublicOpportunityResult } from './agentPublicOpportunity';
 import { isAgentDeterministicResultData } from './agentDeterministicExecutors';
 
 const STORAGE_KEY = 'IA_TOWN_AGENT_TASKS_V1';
@@ -91,7 +92,7 @@ function isDeterministicResult(value: unknown): value is Extract<AgentTaskResult
 }
 
 function isAgentTaskResult(value: unknown): value is AgentTaskResult {
-  return isProposal(value) || isDeterministicResult(value);
+  return isProposal(value) || isDeterministicResult(value) || isAgentPublicOpportunityResult(value);
 }
 
 export function isAgentTask(value: unknown): value is AgentTask {
@@ -102,9 +103,11 @@ export function isAgentTask(value: unknown): value is AgentTask {
     && typeof task.agentName === 'string'
     && typeof task.building === 'string'
     && (task.agentType === 'TYPE_A_IA' || task.agentType === 'TYPE_B_SERVICE' || task.agentType === 'TYPE_C_HYBRID')
-    && (task.executionMode === 'DETERMINISTIC' || task.executionMode === 'PROPOSAL_ONLY' || task.executionMode === 'UNAVAILABLE')
+    && (task.executionMode === 'DETERMINISTIC' || task.executionMode === 'REMOTE_READ_ONLY' || task.executionMode === 'PROPOSAL_ONLY' || task.executionMode === 'UNAVAILABLE')
     && (task.executionMode === 'DETERMINISTIC'
       ? Array.isArray(task.connectedTools) && task.connectedTools.length > 0
+      : task.executionMode === 'REMOTE_READ_ONLY'
+        ? task.agentType === 'TYPE_B_SERVICE' && Array.isArray(task.connectedTools) && task.connectedTools.length > 0
       : task.agentType === 'TYPE_B_SERVICE'
         ? task.executionMode === 'UNAVAILABLE'
         : task.executionMode === 'PROPOSAL_ONLY')
@@ -115,16 +118,20 @@ export function isAgentTask(value: unknown): value is AgentTask {
     && typeof task.updatedAt === 'string' && Number.isFinite(Date.parse(task.updatedAt))
     && (task.deadlineAt === undefined || (typeof task.deadlineAt === 'string' && Number.isFinite(Date.parse(task.deadlineAt))))
     && typeof task.attempts === 'number' && Number.isInteger(task.attempts) && task.attempts >= 0 && task.attempts <= MAX_AGENT_TASK_ATTEMPTS
-    && (task.executionMode === 'DETERMINISTIC' ? task.budgetMaxEur === 0 : task.budgetMaxEur === null)
+    && (task.executionMode === 'DETERMINISTIC' || task.executionMode === 'REMOTE_READ_ONLY' ? task.budgetMaxEur === 0 : task.budgetMaxEur === null)
     && task.providerCostEur === null
     && isStringArray(task.declaredTools)
     && isStringArray(task.declaredPermissions)
     && Array.isArray(task.connectedTools) && task.connectedTools.every(toolId => typeof toolId === 'string')
-    && (task.executionMode === 'DETERMINISTIC' ? task.connectedTools.length > 0 : task.connectedTools.length === 0)
+    && (task.executionMode === 'DETERMINISTIC' || task.executionMode === 'REMOTE_READ_ONLY' ? task.connectedTools.length > 0 : task.connectedTools.length === 0)
     && (task.result === undefined || (isAgentTaskResult(task.result)
       && task.result.agentId === task.agentId
       && (task.result.resultKind === 'PROPOSAL'
-        || (Array.isArray(task.connectedTools) && task.connectedTools.includes(task.result.toolId)))))
+        ? task.executionMode === 'PROPOSAL_ONLY'
+        : Array.isArray(task.connectedTools) && task.connectedTools.includes(task.result.toolId)
+          && (task.result.resultKind === 'DETERMINISTIC_RESULT'
+            ? task.executionMode === 'DETERMINISTIC'
+            : task.executionMode === 'REMOTE_READ_ONLY'))))
     && (task.error === undefined || typeof task.error === 'string')
     && Array.isArray(task.history) && task.history.length > 0 && task.history.length <= MAX_AGENT_TASK_EVENTS && task.history.every(isEvent)
     && ((task.status === 'WAITING_REVIEW' || task.status === 'REVIEWED' || task.status === 'DISMISSED')

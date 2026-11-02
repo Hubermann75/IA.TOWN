@@ -7,7 +7,7 @@
 
 ## État technique V6 — 2 novembre 2026
 
-### Phase réalisée : cycle de missions, OPPORTUNITY.LAB et début de CENTMINE
+### Phases réalisées : cycle de missions, OPPORTUNITY.LAB et pilotes CENTMINE
 
 - Un schéma commun dérive une définition d’exécution pour les 94 profils historiques du registre. Il distingue les outils déclarés, les outils locaux connectés, les permissions réellement appliquées, les budgets inconnus et les tests individuels absents.
 - Une file locale persistante enregistre les missions avec priorité, historique, tentatives, résultat, erreur, revue et annulation avant exécution. L’ordre de priorité est déterministe.
@@ -19,12 +19,26 @@
 - Chaque exécuteur pilote expose maintenant la référence du test qui valide sa fonction; le registre signale les profils déterministes sans test associé.
 - Le profil historique `MINE.GUARD` (ID 38) est relié au rôle cible V6 16. Son outil local filtre les signaux de risque déclarés, les conditions de paiement, les règles de plateforme et les droits d’usage; l’entrée garde ses sources et dates.
 - MINE.GUARD classe un dossier `BLOCKED`, `REVIEW_REQUIRED` ou `NO_RED_FLAGS_RESEARCH_ONLY`. Même le dernier état ne certifie rien : les champs et sources sont fournis par l’utilisateur, non vérifiés; aucune action web, plateforme ou financière n’est exécutée.
-- Le registre historique présente six profils CENTMINE (IDs 38 à 43), alors que la spécification V6 en demande huit. Le filtre MINE.GUARD est le seul exécuteur local du groupe à ce stade; les rôles Prospector, Gold Analyst, Task Miner, Ad Miner, Affiliate Miner, Digital Miner et Overmine restent à réconcilier et à implémenter.
+- Le registre historique présente six profils CENTMINE (IDs 38 à 43), alors que la spécification V6 en demande huit. Le profil historique `MINER.PRIME` (ID 39) possède maintenant un connecteur de recherche publique BOAMP en lecture seule, associé comme pilote au rôle cible V6 14 `PROSPECTOR`. Ce lien ne renomme ni ne réconcilie le catalogue historique; les autres rôles CENTMINE restent à implémenter.
+- Le connecteur BOAMP interroge uniquement l’API officielle et n’accepte aucun URL libre. Il sélectionne les champs d’identifiant, objet, publication, échéance, nature et type de marché; il examine jusqu’à 30 enregistrements et en présente au plus 10. Il rejette les avis qui ne sont pas des appels d’offres, les titres/identifiants inutilisables, les échéances absentes ou non ISO, ainsi que les échéances passées.
+- Les résultats conservent la requête, l’heure de collecte, les compteurs, le lien BOAMP construit depuis l’identifiant source et un indicateur d’admissibilité non vérifiée. Le résultat est conservé dans l’historique `localStorage` et attend la revue humaine. Aucune candidature, prise de contact, dépense, vente ou écriture financière n’est déclenchée.
+- Garde-fous du connecteur : rôle ID/nom/type et capacité appliquée, contrôle d’origine, 12 requêtes/minute/IP, délai réseau de 8 s, redirections refusées, réponse limitée à 512 Ko et champs minimaux. Les recherches passent par le serveur IA TOWN; les mots-clés sont envoyés à BOAMP. Les titres d’avis peuvent contenir des renseignements personnels; le coût d’hébergement et de bande passante n’est pas mesuré.
+- Vérification live en lecture seule le 2 novembre 2026 : « prestations » a produit 125 623 correspondances annoncées, 30 enregistrements examinés, 10 avis encore ouverts retenus et 4 écartés; « développement application web » a produit 96 correspondances annoncées, 30 examinés et aucun avis avec échéance future parmi ces 30. Un POST à la route de l’application compilée a retourné le même résultat (HTTP 200; 10 liens BOAMP officiels validés). Les résultats ne prouvent pas que la source est exhaustive ou mise à jour à l’instant de la collecte.
 - `SCOUT.AI` structure les signaux et sources saisis par l’utilisateur sans recherche web ni vérification en ligne. `NICHE.DRILLER` compare les mentions présentes dans des fiches saisies; l’absence de mention n’est pas une preuve d’absence. `PROTOTYPE.TRIGGER` prépare un plan qui n’est pas exécuté. `REVENUE.ENGINE` classe des hypothèses avec un indice documenté, pas une probabilité de succès ni un revenu réel. Tous ces outils restent locaux, sans frais API ni effet externe.
 - Le registre principal garde encore les anciens IDs/noms; les correspondances sont des pilotes d’exécution et ne valent pas réconciliation complète du catalogue V6. Les projections affichent zéro revenu confirmé.
-- Le registre ne correspond pas encore aux 94 rôles nommés de la spécification V6. Il comporte maintenant 6 profils avec exécuteur local ciblé (6,4 % des 94 rôles), 36 profils de proposition Gemini conditionnelle et 52 profils sans exécuteur. Aucun rôle n’est encore compté comme agent V6 complet avec tous ses outils métier et son parcours externe vérifié.
+- Le registre ne correspond pas encore aux 94 rôles nommés de la spécification V6. Il comporte 6 profils avec exécuteur local déterministe, 1 pilote de recherche publique distant en lecture seule, 36 profils de proposition Gemini conditionnelle et 51 profils sans exécuteur. Sept profils historiques sur 94 ont donc un outil ciblé connecté (7,4 %), mais aucun n’est compté comme agent V6 complet avec toutes ses fonctions métier, collaboration inter-bâtiments et parcours externe validé.
 
-**Validation de cette phase :** `npm test` passe 52/52; `npm run lint` passe (`tsc --noEmit`); `npm run build` réussit pour le client et le serveur. Vite signale un bundle JavaScript de 969,05 kB après minification, au-dessus de son seuil de 500 kB, et un precache PWA de 26 825,64 KiB. Le hook de clôture PWA prend 36,6 secondes lors du build observé. Les tests ne valident pas un appel Gemini réel, une recherche web, une opération financière externe, une base serveur ou une synchronisation inter-appareils. L’application n’a pas été lancée dans un navigateur pendant cette phase.
+**Validation de la phase initiale du moteur (2 novembre 2026) :** `npm test` passait 52/52; `npm run lint` et `npm run build` réussissaient. Ces chiffres sont historiques; la validation la plus récente du pilote Prospector figure ci-dessous.
+
+### Extension livrée : recherche publique PROSPECTOR
+
+- Les résultats de l’API sont lus et validés côté serveur avant d’être rattachés à une tâche. L’interface affiche les avis source, leurs échéances interprétées et le niveau de vérification; les liens mènent au site BOAMP officiel.
+- Tests automatisés : 59/59 réussis, incluant parsing de mission, champs bornés, dates avec fuseau, avis clos/invalides, format de réponse, profils autorisés, origine HTTP, file et persistance.
+- `npm run lint` (`tsc --noEmit`) réussit.
+- Le connecteur a réussi deux recherches publiques en direct et n’a lu que les champs sélectionnés. Son test automatisé de route HTTP utilise un connecteur simulé; en plus, le serveur compilé et sa route ont été lancés puis vérifiés en direct contre BOAMP.
+- `npm run build` réussit pour le client et le serveur. Le bundle JavaScript minifié est de 976,88 kB (au-dessus du seuil d’avertissement de 500 kB); le precache PWA est de 26 833,46 KiB, en hausse par rapport au relevé précédent (969,05 kB JS; 26 825,64 KiB precache).
+- Le serveur compilé a été lancé sur `127.0.0.1:31917`, puis la route `/api/agents/prospect` a été appelée en direct vers BOAMP et a retourné HTTP 200; le serveur a ensuite été arrêté. Cette vérification prouve le chemin API et la recherche publique en lecture seule, pas l’affichage graphique dans un navigateur.
+- Aucun appel Gemini, déploiement public, appareil CCC, candidature, vente, paiement ou circuit commercial complet n’a été testé.
 
 ---
 
