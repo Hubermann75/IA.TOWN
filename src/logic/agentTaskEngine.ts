@@ -154,7 +154,7 @@ export function buildAgentRuntimeDefinition(agent: AgentRecord): AgentRuntimeDef
     results: [],
     errorHandling: 'Les erreurs restent attachées à la mission; aucune relance ou action externe automatique.',
     visualState: 'INACTIVE',
-    associatedTests: [],
+    associatedTests: connectedTools.map(tool => tool.associatedTest),
   };
 }
 

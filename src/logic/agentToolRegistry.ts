@@ -18,6 +18,7 @@ export interface AgentToolDefinition {
   requiredCapability: AgentCapability;
   missionType: 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING';
   exampleMission: string;
+  associatedTest: string;
   sideEffects: false;
   costEur: 0;
   execute: (agent: AgentRecord, taskId: string, mission: string, now?: string) => AgentDeterministicResult;
@@ -33,6 +34,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     requiredCapability: 'LOCAL_DEMAND_EVIDENCE_ANALYSIS',
     missionType: 'DEMAND_EVIDENCE_ANALYSIS',
     exampleMission: JSON.stringify({ sources: [{ sourceName: 'Source publique', url: 'https://example.org/rapport', observedAt: '2026-11-02', signal: 'Exemple de signal documenté à remplacer par vos données', strength: 3 }] }, null, 2),
+    associatedTest: 'agentTools.test.ts::demand evidence tool preserves provenance and never claims live verification',
     sideEffects: false,
     costEur: 0,
     execute: runDemandEvidenceAnalyzer,
@@ -46,6 +48,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     requiredCapability: 'LOCAL_COMPETITOR_DATA_ANALYSIS',
     missionType: 'COMPETITOR_DATA_ANALYSIS',
     exampleMission: JSON.stringify({ competitors: [{ name: 'Concurrent A', sourceUrl: 'https://example.org/offre-a', observedAt: '2026-11-02', priceEur: 19, features: ['Export CSV', 'Mode équipe'] }, { name: 'Concurrent B', sourceUrl: 'https://example.org/offre-b', observedAt: '2026-11-02', priceEur: 25, features: ['Export CSV'] }] }, null, 2),
+    associatedTest: 'agentTools.test.ts::competitor comparison calls omissions potential listing gaps, not confirmed feature absence',
     sideEffects: false,
     costEur: 0,
     execute: runCompetitorComparison,
@@ -59,6 +62,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     requiredCapability: 'LOCAL_MARGIN_CALCULATION',
     missionType: 'MARGIN_ANALYSIS',
     exampleMission: JSON.stringify({ unitPriceEur: 29, variableCostPerUnitEur: 4.75, fixedCostsEur: 100, plannedUnits: 10 }, null, 2),
+    associatedTest: 'agentTools.test.ts::margin calculator returns reproducible scenario values and zero confirmed revenue',
     sideEffects: false,
     costEur: 0,
     execute: runMarginCalculator,
@@ -72,6 +76,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     requiredCapability: 'LOCAL_VALIDATION_PLANNING',
     missionType: 'VALIDATION_PLAN',
     exampleMission: JSON.stringify({ hypothesis: 'Des indépendants paieraient pour automatiser cette tâche', targetAudience: 'Indépendants francophones', method: 'INTERVIEWS', maxBudgetEur: 0, timeboxDays: 7, minimumResponses: 8 }, null, 2),
+    associatedTest: 'agentTools.test.ts::validation planner creates a plan without executing tests, spending or contacting people',
     sideEffects: false,
     costEur: 0,
     execute: runValidationPlan,
@@ -85,6 +90,7 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     requiredCapability: 'LOCAL_PORTFOLIO_RANKING',
     missionType: 'PORTFOLIO_RANKING',
     exampleMission: JSON.stringify({ opportunities: [{ id: 'idee-1', name: 'Outil numérique', sourceCount: 3, deliveryReadinessPercent: 60, riskLevel: 2, unitPriceEur: 29, variableCostPerUnitEur: 5, fixedCostsEur: 100, plannedUnits: 10 }] }, null, 2),
+    associatedTest: 'agentTools.test.ts::portfolio ranking uses a disclosed hypothesis score and zero confirmed revenue',
     sideEffects: false,
     costEur: 0,
     execute: runPortfolioRanking,

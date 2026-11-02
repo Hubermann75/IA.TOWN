@@ -12,7 +12,7 @@ import {
 } from './agentDeterministicExecutors';
 import { authorizeAgentCapability } from './agentPermissionEngine';
 import { executeRegisteredAgentTool, getAgentExecutionMode, getAgentTools, AGENT_TOOL_REGISTRY } from './agentToolRegistry';
-import { createAgentTask, claimNextAgentTask, recordAgentDeterministicResult } from './agentTaskEngine';
+import { createAgentTask, claimNextAgentTask, recordAgentDeterministicResult, buildAgentRuntimeDefinition } from './agentTaskEngine';
 import { loadAgentTasks, saveAgentTasks, type AgentTaskStorage } from './agentTaskStorage';
 
 const marginAgent = AGENT_REGISTRY.find(agent => agent.name === 'MARGIN.PREDICTOR')!;
@@ -84,6 +84,7 @@ test('the five V6 OPPORTUNITY.LAB targets have one role-bound local tool each', 
     const agent = AGENT_REGISTRY.find(candidate => candidate.id === tool.allowedAgentId)!;
     assert.equal(getAgentExecutionMode(agent), 'DETERMINISTIC');
     assert.equal(getAgentTools(agent).length, 1);
+    assert.deepEqual(buildAgentRuntimeDefinition(agent).associatedTests, [tool.associatedTest]);
     assert.equal(tool.sideEffects, false);
     assert.equal(tool.costEur, 0);
   }

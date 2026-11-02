@@ -22,6 +22,9 @@ export function validateAgentRuntimeRegistry(): { valid: boolean; issues: string
   }
   if (new Set(ids).size !== ids.length) issues.push('Les identifiants de rôle ne sont pas uniques.');
   const registeredToolIds = new Set(AGENT_TOOL_REGISTRY.map(tool => tool.id));
+  if (AGENT_TOOL_REGISTRY.some(tool => !tool.associatedTest.trim())) {
+    issues.push('Un exécuteur n’a pas de test associé déclaré.');
+  }
   if (AGENT_RUNTIME_REGISTRY.some(agent => agent.toolsAvailable.some(tool =>
     tool.connected && (!tool.toolId || !registeredToolIds.has(tool.toolId)),
   ))) {
@@ -32,6 +35,9 @@ export function validateAgentRuntimeRegistry(): { valid: boolean; issues: string
       && tool.allowedAgentName === agent.name && tool.requiredCapability === capability),
   ))) {
     issues.push('Une permission est appliquée sans outil et grant correspondants.');
+  }
+  if (AGENT_RUNTIME_REGISTRY.some(agent => agent.executionMode === 'DETERMINISTIC' && agent.associatedTests.length === 0)) {
+    issues.push('Un profil déterministe ne référence aucun test associé.');
   }
   return { valid: issues.length === 0, issues };
 }
