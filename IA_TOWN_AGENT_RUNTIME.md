@@ -19,9 +19,17 @@ Ne place pas la clé dans une variable `VITE_*`, dans le navigateur, dans le dé
 - `GET /api/agents/status` retourne si le fournisseur est disponible, sans exposer la clé.
 - `POST /api/agents/propose` accepte `{ "agentId": "01", "mission": "..." }` et renvoie une proposition horodatée.
 - Les missions sont limitées à 2 000 caractères et à six demandes par minute par connexion serveur.
-- Les profils `TYPE_B_SERVICE` sont refusés tant qu’un exécuteur déterministe dédié n’est pas implémenté.
+- La route Gemini `/propose` refuse les profils `TYPE_B_SERVICE`; l’exécution déterministe passe par le registre d’outils local et ses grants explicites.
 
-La fiche d’agent garde les cinq dernières propositions de chaque profil en mémoire dans la page courante, avec la mission correspondante. Cet historique n’est pas écrit dans `localStorage` ni enregistré côté serveur; il disparaît à la fermeture ou au rechargement de la page et peut être effacé pour un profil.
+## File de missions locale
+
+La fiche agent permet d’enregistrer une mission dans une file locale, avec priorité, horodatage, tentatives, événements et résultat. L’ajout en file n’appelle pas Gemini. Un bouton distinct lance explicitement la prochaine tâche de type proposition; l’appel peut être facturé par le compte Google configuré, et son coût n’est pas encore mesuré par IA TOWN.
+
+Les profils `TYPE_B_SERVICE` peuvent être ajoutés à la file. Un seul, `MARGIN.PREDICTOR`, dispose d’un outil local : calcul de marge avec JSON structuré, validation stricte des entrées et aucun effet externe. Les autres profils B restent en attente. Les rôles A/C produisent uniquement une proposition textuelle. Marquer un résultat comme relu ne valide ni n’exécute une action externe.
+
+Les missions et propositions sont enregistrées sous `IA_TOWN_AGENT_TASKS_V1` dans le `localStorage` du navigateur, avec une limite de 200 tâches. Ce stockage n’est ni une base de données serveur, ni une sauvegarde cloud, ni une synchronisation multi-appareils. Si une exécution est interrompue par un rechargement, la tâche passe à l’état d’échec avec résultat inconnu et n’est jamais relancée automatiquement. L’utilisateur peut la remettre en file manuellement.
+
+L’interface garde une distinction explicite entre outils/permissions déclarés et capacités connectées/appliquées. Le registre d’exécution normalisé contient 94 profils historiques; seul le calculateur local `MARGIN.PREDICTOR` et son grant sont actifs. Le catalogue n’est pas encore réconcilié avec les 94 noms et répartitions du cahier des charges V6. Les outils non connectés, permissions non appliquées, dépendances non vérifiées, budgets non configurés et tests par rôle sont signalés comme tels.
 
 En développement, Vite monte les routes API. Pour le serveur de production, exécute `npm run build`, puis `npm start` avec les mêmes variables d’environnement.
 

@@ -9,7 +9,25 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AGENT_REGISTRY } from '../data/agentRegistry';
 import type { AgentRecord } from '../types/town';
 import { getAgentRuntimeStatus, requestAgentProposal } from '../logic/agentRuntimeClient';
-import type { AgentRuntimeStatus, AgentTaskProposal } from '../logic/agentRuntimeClient';
+import type { AgentRuntimeStatus } from '../logic/agentRuntimeClient';
+import {
+  claimNextAgentTask,
+  createAgentTask,
+  cancelQueuedAgentTask,
+  enqueueAgentTask,
+  failAgentTask,
+  getAgentVisualState,
+  recordAgentDeterministicResult,
+  recordAgentProposal,
+  recoverInterruptedAgentTasks,
+  reviewAgentResult,
+  retryFailedAgentTask,
+  selectNextRunnableAgentTask,
+  type AgentTask,
+  type AgentTaskPriority,
+} from '../logic/agentTaskEngine';
+import { readAgentTaskStore, saveAgentTasks } from '../logic/agentTaskStorage';
+import { executeRegisteredAgentTool, getAgentExecutionMode } from '../logic/agentToolRegistry';
 import { RobotAvatar, RobotRoleDesign } from './RobotAvatar';
 import { soundEngine } from '../utils/soundEngine';
 import { 
@@ -47,24 +65,40 @@ const VISUAL_ROLES_CATALOG: { role: RobotRoleDesign; title: string; building: st
   { role: 'EXPLORATEUR', title: 'Explorateur', building: 'OPPORTUNITY.LAB', desc: 'Veille marché temps réel et détection de niches rentables' },
 ];
 
-const MAX_SESSION_PROPOSALS_PER_AGENT = 5;
-
-interface SessionProposalEntry {
-  mission: string;
-  proposal: AgentTaskProposal;
-}
+const MAX_VISIBLE_AGENT_TASKS = 5;
+const TASK_STATUS_LABELS: Record<AgentTask['status'], string> = {
+  QUEUED: 'EN FILE',
+  RUNNING: 'EN COURS',
+  WAITING_REVIEW: 'À RELIRE',
+  REVIEWED: 'RELUE',
+  DISMISSED: 'ÉCARTÉE',
+  FAILED: 'ÉCHEC',
+  CANCELLED: 'ANNULÉE',
+};
 
 export const AgentFileView: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('ALL');
   const [selectedAgentId, setSelectedAgentId] = useState<string>(AGENT_REGISTRY[0].id);
   const [newMissionText, setNewMissionText] = useState('');
+  const [taskPriority, setTaskPriority] = useState<AgentTaskPriority>('NORMAL');
   const [runtimeStatus, setRuntimeStatus] = useState<AgentRuntimeStatus | null>(null);
   const [runtimeCheckFailed, setRuntimeCheckFailed] = useState(false);
-  const [proposalHistoryByAgent, setProposalHistoryByAgent] = useState<Record<string, SessionProposalEntry[]>>({});
+  const [initialTaskStore] = useState(() => readAgentTaskStore());
+  const [agentTasks, setAgentTasks] = useState<AgentTask[]>(() => recoverInterruptedAgentTasks(initialTaskStore.tasks));
+  const [taskStorageAvailable, setTaskStorageAvailable] = useState(initialTaskStore.writable);
+  const [taskStorageWarning, setTaskStorageWarning] = useState<string | null>(initialTaskStore.warning ?? null);
   const [missionError, setMissionError] = useState<string | null>(null);
   const [isSubmittingMission, setIsSubmittingMission] = useState(false);
   const missionRequestVersion = useRef(0);
+
+  useEffect(() => {
+    if (!taskStorageAvailable) return;
+    if (!saveAgentTasks(agentTasks)) {
+      setTaskStorageAvailable(false);
+      setTaskStorageWarning('Écriture impossible; l’historique existant est conservé et aucune mission ne sera ajoutée.');
+    }
+  }, [agentTasks, taskStorageAvailable]);
 
   useEffect(() => {
     let mounted = true;
@@ -83,11 +117,19 @@ export const AgentFileView: React.FC = () => {
   useEffect(() => {
     missionRequestVersion.current += 1;
     setMissionError(null);
-    setIsSubmittingMission(false);
   }, [selectedAgentId]);
 
   const selectedAgent: AgentRecord = AGENT_REGISTRY.find(a => a.id === selectedAgentId) || AGENT_REGISTRY[0];
-  const selectedAgentProposals = proposalHistoryByAgent[selectedAgentId] ?? [];
+  const selectedAgentTasks = agentTasks
+    .filter(task => task.agentId === selectedAgentId)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .slice(0, MAX_VISIBLE_AGENT_TASKS);
+  const selectedAgentVisualState = getAgentVisualState(agentTasks, selectedAgentId);
+  const queuedProposalTaskCount = agentTasks.filter(task => task.status === 'QUEUED' && task.executionMode === 'PROPOSAL_ONLY').length;
+  const queuedDeterministicTaskCount = agentTasks.filter(task => task.status === 'QUEUED' && task.executionMode === 'DETERMINISTIC').length;
+  const queuedUnavailableTaskCount = agentTasks.filter(task => task.status === 'QUEUED' && task.executionMode === 'UNAVAILABLE').length;
+  const nextRunnableTask = selectNextRunnableAgentTask(agentTasks, runtimeStatus?.available === true);
+  const selectedAgentExecutionMode = getAgentExecutionMode(selectedAgent);
 
   const filteredAgents = AGENT_REGISTRY.filter(agent => {
     const matchesSearch = 
@@ -102,38 +144,122 @@ export const AgentFileView: React.FC = () => {
     return matchesSearch;
   });
 
-  const handleSendMission = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleQueueMission = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const mission = newMissionText.trim();
-    if (!mission || isSubmittingMission || selectedAgent.type === 'TYPE_B_SERVICE' || !runtimeStatus?.available) return;
-
-    const requestVersion = ++missionRequestVersion.current;
-    setIsSubmittingMission(true);
+    if (!mission || isSubmittingMission || !taskStorageAvailable || agentTasks.length >= 200) return;
     setMissionError(null);
     try {
-      const proposal = await requestAgentProposal(selectedAgent.id, mission);
-      if (missionRequestVersion.current !== requestVersion) return;
-      setProposalHistoryByAgent(current => ({
-        ...current,
-        [selectedAgent.id]: [
-          { mission, proposal },
-          ...(current[selectedAgent.id] ?? []),
-        ].slice(0, MAX_SESSION_PROPOSALS_PER_AGENT),
-      }));
+      const createdTask = createAgentTask(selectedAgent, mission, { priority: taskPriority });
+      const queuedTasks = enqueueAgentTask(agentTasks, createdTask);
+      if (!saveAgentTasks(queuedTasks)) throw new Error('Le stockage local n’a pas accepté la mission.');
+      setAgentTasks(queuedTasks);
       setNewMissionText('');
       soundEngine.playSuccess();
     } catch (error) {
-      if (missionRequestVersion.current === requestVersion) {
-        setMissionError(error instanceof Error ? error.message : 'La demande IA a échoué. Aucune action externe n’a été lancée.');
-        soundEngine.playAlert();
+      if (error instanceof Error && error.message.includes('stockage')) {
+        setTaskStorageAvailable(false);
+        setTaskStorageWarning(error.message);
       }
-    } finally {
-      if (missionRequestVersion.current === requestVersion) setIsSubmittingMission(false);
+      setMissionError(error instanceof Error ? error.message : 'La mission n’a pas pu être enregistrée.');
+      soundEngine.playAlert();
     }
   };
 
+  const handleRunNextTask = async () => {
+    if (isSubmittingMission || !nextRunnableTask) return;
+    const requestVersion = ++missionRequestVersion.current;
+    setIsSubmittingMission(true);
+    setMissionError(null);
+
+    let runningTask: AgentTask | undefined;
+    try {
+      const claim = claimNextAgentTask(agentTasks, new Date().toISOString(), runtimeStatus?.available === true);
+      if (!claim.claimedTask) throw new Error('Aucune mission en file ne dispose actuellement d’un exécuteur disponible.');
+      runningTask = claim.claimedTask;
+      if (!saveAgentTasks(claim.tasks)) {
+        setTaskStorageAvailable(false);
+        setTaskStorageWarning('Écriture impossible; la mission a été bloquée avant son exécution.');
+        throw new Error('Impossible de sauvegarder l’état avant l’exécution.');
+      }
+      setAgentTasks(claim.tasks);
+
+      const canonicalAgent = AGENT_REGISTRY.find(agent => agent.id === runningTask?.agentId);
+      if (!canonicalAgent || getAgentExecutionMode(canonicalAgent) !== runningTask.executionMode) {
+        throw new Error('Le profil enregistré ne correspond plus au registre d’exécution; mission bloquée.');
+      }
+
+      const completedTask = runningTask.executionMode === 'DETERMINISTIC'
+        ? recordAgentDeterministicResult(
+          runningTask,
+          executeRegisteredAgentTool(
+            canonicalAgent,
+            runningTask.connectedTools[0] ?? '',
+            runningTask.id,
+            runningTask.mission,
+          ),
+        )
+        : recordAgentProposal(runningTask, await requestAgentProposal(runningTask.agentId, runningTask.mission));
+      setAgentTasks(current => current.map(task =>
+        task.id === completedTask.id && task.status === 'RUNNING' ? completedTask : task,
+      ));
+      if (missionRequestVersion.current === requestVersion) soundEngine.playSuccess();
+    } catch (error) {
+      if (runningTask) {
+        const failedTask = failAgentTask(
+          runningTask,
+          error instanceof Error ? error.message : 'La demande IA a échoué.',
+        );
+        setAgentTasks(current => current.map(task =>
+          task.id === failedTask.id && task.status === 'RUNNING' ? failedTask : task,
+        ));
+      }
+      if (missionRequestVersion.current === requestVersion) {
+        setMissionError(error instanceof Error ? error.message : 'La mission a échoué. Aucune action externe n’a été lancée.');
+        soundEngine.playAlert();
+      }
+    } finally {
+      setIsSubmittingMission(false);
+    }
+  };
+
+  const handleReviewTaskResult = (taskId: string, decision: 'REVIEWED' | 'DISMISSED') => {
+    setAgentTasks(current => current.map(task => {
+      if (task.id !== taskId) return task;
+      try {
+        return reviewAgentResult(task, decision);
+      } catch {
+        return task;
+      }
+    }));
+  };
+
+  const handleRetryTask = (taskId: string) => {
+    setAgentTasks(current => current.map(task => {
+      if (task.id !== taskId) return task;
+      try {
+        return retryFailedAgentTask(task);
+      } catch {
+        return task;
+      }
+    }));
+  };
+
+  const handleCancelTask = (taskId: string) => {
+    setAgentTasks(current => current.map(task => {
+      if (task.id !== taskId) return task;
+      try {
+        return cancelQueuedAgentTask(task);
+      } catch {
+        return task;
+      }
+    }));
+  };
+
   const missionRuntimeMessage = selectedAgent.type === 'TYPE_B_SERVICE'
-    ? 'Ce profil demande un exécuteur déterministe dédié, qui n’est pas encore implémenté.'
+    ? selectedAgentExecutionMode === 'DETERMINISTIC'
+      ? 'Calculateur local disponible. Utilisez le JSON indiqué; le résultat reste une projection et ne modifie aucun registre financier.'
+      : 'Aucun exécuteur déterministe n’est branché. Vous pouvez conserver la mission en file; elle ne sera pas exécutée.'
     : runtimeCheckFailed
       ? 'Serveur IA inaccessible dans ce mode de lancement.'
       : !runtimeStatus
@@ -386,79 +512,167 @@ export const AgentFileView: React.FC = () => {
             </div>
 
             {/* Mission Dispatch Console */}
-            <form onSubmit={handleSendMission} className="p-3.5 rounded-xl panel-town-standard space-y-2">
+            <form onSubmit={handleQueueMission} className="p-3.5 rounded-xl panel-town-standard space-y-2">
               <span className="text-[10px] uppercase font-mono-code text-slate-400 block">
-                Demander une Proposition à l’Agent IA
+                Créer une mission
               </span>
+              <div className="flex items-center justify-between gap-2 text-[10px] font-mono-code">
+                <span className="text-slate-400">État d’exécution enregistré</span>
+                <span className={selectedAgentVisualState === 'ERROR' ? 'text-rose-300' : selectedAgentVisualState === 'WAITING_REVIEW' ? 'text-amber-300' : selectedAgentVisualState === 'WORKING' ? 'text-cyan-300' : 'text-slate-300'}>
+                  {selectedAgentVisualState === 'INACTIVE' ? 'INACTIF' : selectedAgentVisualState === 'QUEUED' ? 'EN FILE' : selectedAgentVisualState === 'WORKING' ? 'TRAVAIL' : selectedAgentVisualState === 'WAITING_REVIEW' ? 'ATTENTE DE REVUE' : 'ERREUR'}
+                </span>
+              </div>
               <div className={`rounded-lg border px-3 py-2 text-[11px] font-mono-code ${runtimeStatus?.available && selectedAgent.type !== 'TYPE_B_SERVICE' ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300' : 'border-amber-800 bg-amber-950/20 text-amber-300'}`}>
                 {missionRuntimeMessage}
               </div>
               <div className="flex gap-2">
-                <input
-                  type="text"
+                <textarea
+                  rows={selectedAgentExecutionMode === 'DETERMINISTIC' ? 4 : 2}
                   value={newMissionText}
                   onChange={(e) => setNewMissionText(e.target.value)}
                   maxLength={2000}
                   disabled={isSubmittingMission}
-                  placeholder={`Décrire une demande pour ${selectedAgent.name}...`}
-                  className="flex-1 bg-[#0A0F1E] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 font-inter focus:outline-none focus:border-cyan-400"
+                  placeholder={selectedAgentExecutionMode === 'DETERMINISTIC'
+                    ? '{"unitPriceEur":29,"variableCostPerUnitEur":4.75,"fixedCostsEur":100,"plannedUnits":10}'
+                    : `Décrire une mission pour ${selectedAgent.name}...`}
+                  className="flex-1 resize-y bg-[#0A0F1E] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 font-inter focus:outline-none focus:border-cyan-400"
                 />
+                <select
+                  aria-label="Priorité de la mission"
+                  value={taskPriority}
+                  onChange={event => setTaskPriority(event.target.value as AgentTaskPriority)}
+                  className="bg-[#0A0F1E] border border-slate-800 rounded-lg px-2 py-2 text-[10px] text-slate-200 font-mono-code"
+                  disabled={isSubmittingMission}
+                >
+                  <option value="LOW">BASSE</option>
+                  <option value="NORMAL">NORMALE</option>
+                  <option value="HIGH">HAUTE</option>
+                  <option value="URGENT">URGENTE</option>
+                </select>
                 <button
                   type="submit"
-                  disabled={!newMissionText.trim() || isSubmittingMission || selectedAgent.type === 'TYPE_B_SERVICE' || !runtimeStatus?.available}
+                  disabled={!newMissionText.trim() || isSubmittingMission || !taskStorageAvailable || agentTasks.length >= 200}
                   className="btn-town-primary text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  {isSubmittingMission ? 'Analyse…' : 'Demander'}
+                  Mettre en file
                 </button>
+              </div>
+              {selectedAgentExecutionMode === 'DETERMINISTIC' && (
+                <button
+                  type="button"
+                  onClick={() => setNewMissionText(JSON.stringify({ unitPriceEur: 29, variableCostPerUnitEur: 4.75, fixedCostsEur: 100, plannedUnits: 10 }, null, 2))}
+                  className="text-[9px] font-mono-code text-cyan-300 underline underline-offset-2"
+                >
+                  Insérer le modèle JSON de calcul
+                </button>
+              )}
+              <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-2 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono-code text-slate-400">
+                  <span>{queuedDeterministicTaskCount} exécution(s) locale(s) · {queuedProposalTaskCount} proposition(s) Gemini · {queuedUnavailableTaskCount} sans exécuteur</span>
+                  <span>{runtimeStatus?.available ? 'Coût Gemini non mesuré' : 'Gemini indisponible'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRunNextTask}
+                  disabled={!nextRunnableTask || isSubmittingMission || !taskStorageAvailable}
+                  className="w-full rounded-lg border border-cyan-800 bg-cyan-950/50 px-3 py-2 text-[10px] font-mono-code text-cyan-200 hover:bg-cyan-900/50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isSubmittingMission
+                    ? 'Mission en cours…'
+                    : nextRunnableTask?.executionMode === 'DETERMINISTIC'
+                      ? `Exécuter la prochaine mission locale (${queuedDeterministicTaskCount})`
+                      : `Demander la prochaine proposition Gemini (${queuedProposalTaskCount})`}
+                </button>
+                {queuedProposalTaskCount > 0 && !runtimeStatus?.available && (
+                  <p className="text-[9px] text-amber-300">Les missions restent en file jusqu’à la disponibilité du fournisseur. L’appel peut être facturé par Google et son coût n’est pas mesuré par IA TOWN.</p>
+                )}
+                {runtimeStatus?.available && queuedProposalTaskCount > 0 && (
+                  <p className="text-[9px] text-amber-300">Le lancement envoie la mission à Gemini et peut entraîner un coût sur la clé configurée. IA TOWN ne mesure pas encore ce coût.</p>
+                )}
               </div>
               {missionError && (
                 <div role="alert" className="text-xs font-mono-code text-rose-300 pt-1">
                   {missionError}
                 </div>
               )}
-              {selectedAgentProposals.length > 0 && (
-                <section aria-label="Historique des propositions de cette session" className="rounded-xl border border-cyan-900/70 bg-cyan-950/10 p-3 space-y-2">
-                  <header className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h3 className="text-[10px] font-mono-code text-cyan-200">
-                        PROPOSITIONS DE CETTE SESSION · {selectedAgentProposals.length}/{MAX_SESSION_PROPOSALS_PER_AGENT}
-                      </h3>
-                      <p className="text-[9px] text-slate-500">En mémoire jusqu’à la fermeture de cette page.</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setProposalHistoryByAgent(current => {
-                        const next = { ...current };
-                        delete next[selectedAgent.id];
-                        return next;
-                      })}
-                      className="text-[10px] font-mono-code text-slate-400 hover:text-white underline underline-offset-2"
-                    >
-                      Effacer pour cet agent
-                    </button>
-                  </header>
+              <section aria-label="Historique persistant des missions" className="rounded-xl border border-cyan-900/70 bg-cyan-950/10 p-3 space-y-2">
+                <header className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-[10px] font-mono-code text-cyan-200">
+                      MISSIONS DE CET AGENT · {selectedAgentTasks.length}/{MAX_VISIBLE_AGENT_TASKS} AFFICHÉES
+                    </h3>
+                    <p className="text-[9px] text-slate-500">Historique local au navigateur. N’y saisissez aucune clé ni aucun mot de passe.</p>
+                  </div>
+                  <span className="text-[9px] font-mono-code text-slate-400">{agentTasks.length}/{200} missions conservées</span>
+                </header>
+                {!taskStorageAvailable && (
+                  <p role="alert" className="text-[10px] text-rose-300">
+                    {taskStorageWarning ?? 'Le stockage local est en lecture seule; l’historique existant n’a pas été remplacé.'}
+                  </p>
+                )}
+                {selectedAgentTasks.length === 0 ? (
+                  <p className="text-[10px] text-slate-500">Aucune mission enregistrée pour ce profil.</p>
+                ) : (
                   <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                    {selectedAgentProposals.map(({ mission, proposal }, index) => (
+                    {selectedAgentTasks.map(task => (
                       <details
-                        key={proposal.requestId}
-                        open={index === 0}
+                        key={task.id}
                         className="rounded-lg border border-slate-800 bg-[#0A0F1E]/80 p-2"
                       >
                         <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-[10px] font-mono-code text-cyan-200">
-                          <span>{proposal.agentName} · {proposal.model}</span>
-                          <span>{new Date(proposal.createdAt).toLocaleString('fr-FR')} · {proposal.durationMs} ms</span>
+                          <span>{task.agentName} · {TASK_STATUS_LABELS[task.status]}</span>
+                          <span>{new Date(task.updatedAt).toLocaleString('fr-FR')} · tentative {task.attempts}</span>
                         </summary>
-                        <p className="mt-2 text-[10px] text-slate-400">Mission : {mission}</p>
-                        <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{proposal.output}</p>
-                        <p className="mt-2 text-[10px] font-mono-code text-amber-300">
-                          Proposition à valider. Aucune action externe n’a été exécutée.
-                        </p>
+                        <p className="mt-2 text-[10px] text-slate-400">Mission : {task.mission}</p>
+                        {task.result?.resultKind === 'PROPOSAL' && (
+                          <>
+                            <p className="mt-2 text-[9px] text-slate-500">{task.result.model} · {task.result.durationMs} ms</p>
+                            <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{task.result.output}</p>
+                            <p className="mt-2 text-[10px] font-mono-code text-amber-300">
+                              Proposition seulement. Aucune action externe n’a été exécutée.
+                            </p>
+                          </>
+                        )}
+                        {task.result?.resultKind === 'DETERMINISTIC_RESULT' && (
+                          <>
+                            <p className="mt-2 text-[9px] text-slate-500">Outil local : {task.result.toolId} · données de la mission</p>
+                            <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{task.result.output}</p>
+                            <p className="mt-2 text-[10px] font-mono-code text-amber-300">
+                              Projection depuis les entrées; revenu confirmé : {task.result.data.confirmedRevenueEur.toFixed(2)} €. Aucun registre bancaire modifié.
+                            </p>
+                          </>
+                        )}
+                        {task.error && <p className="mt-2 text-[10px] text-rose-300">{task.error}</p>}
+                        {task.status === 'WAITING_REVIEW' && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <button type="button" onClick={() => handleReviewTaskResult(task.id, 'REVIEWED')} className="text-[10px] font-mono-code text-emerald-300 underline underline-offset-2">
+                              Marquer le résultat comme relu
+                            </button>
+                            <button type="button" onClick={() => handleReviewTaskResult(task.id, 'DISMISSED')} className="text-[10px] font-mono-code text-slate-400 underline underline-offset-2">
+                              Écarter le résultat
+                            </button>
+                          </div>
+                        )}
+                        {(task.status === 'QUEUED' || task.status === 'FAILED') && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {task.status === 'QUEUED' && (
+                              <button type="button" onClick={() => handleCancelTask(task.id)} className="text-[10px] font-mono-code text-slate-400 underline underline-offset-2">
+                                Annuler la mission en attente
+                              </button>
+                            )}
+                            {task.status === 'FAILED' && (
+                              <button type="button" onClick={() => handleRetryTask(task.id)} className="text-[10px] font-mono-code text-cyan-300 underline underline-offset-2">
+                                Remettre en file
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </details>
                     ))}
                   </div>
-                </section>
-              )}
+                )}
+              </section>
             </form>
           </div>
 

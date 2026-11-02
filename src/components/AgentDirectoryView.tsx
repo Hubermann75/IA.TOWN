@@ -4,9 +4,17 @@
  * IA TOWN V3.0 & CCC.CONNECT HUB — Registre des 94 Agents & Superviseur d'Assignation
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AGENT_REGISTRY } from '../data/agentRegistry';
 import { AgentRecord, AgentRoleType } from '../types/town';
+import {
+  createAgentTask,
+  enqueueAgentTask,
+  getAgentVisualState,
+  recoverInterruptedAgentTasks,
+  type AgentTask,
+} from '../logic/agentTaskEngine';
+import { readAgentTaskStore, saveAgentTasks } from '../logic/agentTaskStorage';
 import {
   Bot,
   Search,
@@ -34,6 +42,10 @@ import {
 
 export const AgentDirectoryView: React.FC = () => {
   const [agents, setAgents] = useState<AgentRecord[]>(AGENT_REGISTRY);
+  const [initialTaskStore] = useState(() => readAgentTaskStore());
+  const [agentTasks, setAgentTasks] = useState<AgentTask[]>(() => recoverInterruptedAgentTasks(initialTaskStore.tasks));
+  const [taskStorageAvailable, setTaskStorageAvailable] = useState(initialTaskStore.writable);
+  const [taskStorageWarning, setTaskStorageWarning] = useState<string | null>(initialTaskStore.warning ?? null);
   const [filterType, setFilterType] = useState<'ALL' | AgentRoleType | 'CCC_BRIDGES'>('ALL');
   const [selectedBuilding, setSelectedBuilding] = useState<string>('ALL');
   const [search, setSearch] = useState('');
@@ -42,6 +54,18 @@ export const AgentDirectoryView: React.FC = () => {
   const [missionFeedback, setMissionFeedback] = useState<string | null>(null);
 
   const inspectedAgent = agents.find(a => a.id === inspectedAgentId) || null;
+
+  useEffect(() => {
+    if (!taskStorageAvailable) return;
+    if (!saveAgentTasks(agentTasks)) {
+      setTaskStorageAvailable(false);
+      setTaskStorageWarning('Écriture impossible; l’historique existant est conservé.');
+    }
+  }, [agentTasks, taskStorageAvailable]);
+
+  const inspectedAgentVisualState = inspectedAgent
+    ? getAgentVisualState(agentTasks, inspectedAgent.id)
+    : 'INACTIVE';
 
   // Filter logic
   const filteredAgents = agents.filter(agent => {
@@ -71,35 +95,22 @@ export const AgentDirectoryView: React.FC = () => {
   // Assign mission handler
   const handleAssignMission = () => {
     if (!inspectedAgent || !newMissionInput.trim()) return;
-
-    const updatedAgents = agents.map(a => {
-      if (a.id === inspectedAgent.id) {
-        return {
-          ...a,
-          currentMission: newMissionInput.trim(),
-          status: 'EN_MISSION' as const,
-          completedMissionsCount: a.completedMissionsCount + 1,
-          metrics: {
-            ...a.metrics,
-            requestsHandled: a.metrics.requestsHandled + 1,
-          },
-          history: [
-            {
-              timestamp: new Date().toISOString(),
-              action: `Nouvelle mission assignée : ${newMissionInput.trim()}`,
-              result: 'Ordre transmis et pris en compte dans la boucle d’exécution',
-            },
-            ...a.history,
-          ],
-        };
+    try {
+      const task = createAgentTask(inspectedAgent, newMissionInput, { priority: 'NORMAL' });
+      const nextTasks = enqueueAgentTask(agentTasks, task);
+      if (!saveAgentTasks(nextTasks)) {
+        setTaskStorageAvailable(false);
+        const errorMessage = 'Le stockage local est indisponible; la mission n’a pas été ajoutée.';
+        setTaskStorageWarning(errorMessage);
+        throw new Error(errorMessage);
       }
-      return a;
-    });
-
-    setAgents(updatedAgents);
-    setMissionFeedback(`Mission confiée à ${inspectedAgent.name} avec succès.`);
-    setNewMissionInput('');
-    setTimeout(() => setMissionFeedback(null), 3000);
+      setAgentTasks(nextTasks);
+      setMissionFeedback(`Mission enregistrée en file pour ${inspectedAgent.name}; elle n’a pas été exécutée.`);
+      setNewMissionInput('');
+    } catch (error) {
+      setMissionFeedback(error instanceof Error ? error.message : 'La mission n’a pas pu être enregistrée.');
+    }
+    setTimeout(() => setMissionFeedback(null), 5000);
   };
 
   // Status toggle handler
@@ -595,26 +606,42 @@ export const AgentDirectoryView: React.FC = () => {
                     CONFIER UNE NOUVELLE MISSION
                   </span>
                   {missionFeedback && (
-                    <span className="text-[11px] text-emerald-400 font-mono-code animate-in fade-in">
+                    <span className="text-[11px] text-amber-300 font-mono-code animate-in fade-in">
                       {missionFeedback}
                     </span>
                   )}
                 </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono-code text-slate-400">
+                  <span>
+                    État de mission : {inspectedAgentVisualState === 'QUEUED' ? 'EN FILE' : inspectedAgentVisualState === 'WORKING' ? 'TRAVAIL' : inspectedAgentVisualState === 'WAITING_REVIEW' ? 'À RELIRE' : inspectedAgentVisualState === 'ERROR' ? 'ERREUR' : 'INACTIF'}
+                  </span>
+                  <span>{agentTasks.filter(task => task.status === 'QUEUED').length} mission(s) en attente · {agentTasks.length}/200 enregistrées</span>
+                </div>
+                <p className="text-[10px] leading-relaxed text-slate-500">
+                  Cette commande enregistre une mission dans le navigateur. Elle ne démarre pas l’agent et ne confirme pas qu’un travail a été effectué.
+                </p>
+                {!taskStorageAvailable && (
+                  <p role="alert" className="text-[10px] text-rose-300">
+                    {taskStorageWarning ?? 'La sauvegarde locale est indisponible; une nouvelle mission ne peut pas être conservée.'}
+                  </p>
+                )}
 
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newMissionInput}
                     onChange={e => setNewMissionInput(e.target.value)}
+                    maxLength={2000}
                     placeholder={`Ex: Optimiser le cache, générer le build, vérifier les transactions...`}
                     className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono-code"
                   />
                   <button
                     onClick={handleAssignMission}
-                    disabled={!newMissionInput.trim()}
+                    disabled={!newMissionInput.trim() || !taskStorageAvailable || agentTasks.length >= 200}
                     className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:hover:bg-cyan-600 text-white font-bold px-4 py-2 rounded-lg transition-colors font-mono-code flex items-center gap-1.5"
                   >
-                    <span>Transmettre</span>
+                    <span>Mettre en file</span>
                   </button>
                 </div>
               </div>
