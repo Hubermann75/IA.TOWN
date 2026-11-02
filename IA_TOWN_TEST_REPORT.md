@@ -5,11 +5,11 @@
 **Résultat historique du 31 octobre :** **21 / 21 tests unitaires validés**
 **Revalidation du 1 novembre :** **31 / 31 tests passés; lint et build réussis**
 
-## Revalidation du runtime agents — 2 novembre 2026
+## Revalidation CEO.AGENT — 2 novembre 2026
 
-Le checkpoint V6 courant a été vérifié séparément du rapport historique ci-dessous : `npm test` passe **62/62 tests** (0 échec, 0 ignoré), `npm run lint` (`tsc --noEmit`) réussit et `npm run build` compile le client et le serveur. Les nouveaux cas couvrent le calcul GOLD ANALYST, le transfert d’un avis PROSPECTOR relu, les hypothèses financières laissées vides avant saisie, le lien `parentTaskId` et sa persistance locale.
+Le checkpoint CEO.AGENT a été vérifié séparément du rapport historique ci-dessous. `npm test` a exécuté 69 tests : **68 réussis** et un test HTTP de route PROSPECTOR bloqué avant les assertions avec `EACCES` sur `127.0.0.1` dans l’environnement isolé. Tous les autres tests ont réussi, y compris le snapshot CEO, le plan local, les permissions, le transfert après relecture, la validation des champs essentiels et la consigne de relecture Gemini. `npm run lint` (`tsc --noEmit`) et `npm run build` réussissent pour le client et le serveur.
 
-Le client compilé produit un bundle JavaScript minifié de 985,81 kB, au-dessus de l’avertissement de 500 kB; le precache PWA atteint 26 842,26 KiB. Vite signale aussi deux imports sans extension dans son chargeur de configuration native. Cette revalidation ne constitue pas un test visuel navigateur du transfert ni une preuve de synchronisation cloud ou d’un parcours commercial réel.
+Le client compilé produit un bundle JavaScript minifié de 1 008,44 kB, au-dessus de l’avertissement de 500 kB; le precache PWA atteint 26 864,77 KiB. Vite signale deux imports sans extension dans son chargeur de configuration native. Cette revalidation ne constitue pas un test visuel navigateur du transfert ni une preuve de synchronisation cloud ou d’un parcours commercial réel. Aucun appel Gemini, appareil CCC, transmission vers un agent distant, dépense ou vente réelle n’a été effectué.
 
 > **Revalidation — 1 novembre 2026 :** `npm test` passe 31/31 tests, `npm run lint` passe et `npm run build` passe pour le client et le serveur. Le contrôle HTTP local de `/api/agents/status` retourne `available: false` et `reason: DISABLED`, comme attendu sans activation Gemini. Les résultats Playwright et les intégrations externes ci-dessous restent ceux de l’exécution historique du 31 octobre; ils n’ont pas été relancés. Le build signale un bundle initial supérieur à 500 kB.
 

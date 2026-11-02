@@ -30,7 +30,15 @@ import {
 import { readAgentTaskStore, saveAgentTasks } from '../logic/agentTaskStorage';
 import { executeRegisteredAgentTool, getAgentExecutionMode, getAgentTools } from '../logic/agentToolRegistry';
 import { parseGoldOpportunityAnalysisInput } from '../logic/agentDeterministicExecutors';
-import { createGoldAnalystHandoffDraft, type GoldAnalystHandoffDraft } from '../logic/agentTaskHandoff';
+import { buildLocalAgentExecutionContext } from '../logic/agentExecutionContext';
+import { isCEOExecutivePlanData } from '../logic/ceoExecutivePlanner';
+import {
+  createCEOAssignmentHandoffDraft,
+  createGoldAnalystHandoffDraft,
+  requireCEOAssignmentInputs,
+  type CEOAssignmentHandoffDraft,
+  type GoldAnalystHandoffDraft,
+} from '../logic/agentTaskHandoff';
 import { RobotAvatar, RobotRoleDesign } from './RobotAvatar';
 import { soundEngine } from '../utils/soundEngine';
 import { 
@@ -94,6 +102,8 @@ export const AgentFileView: React.FC = () => {
   const [missionError, setMissionError] = useState<string | null>(null);
   const [isSubmittingMission, setIsSubmittingMission] = useState(false);
   const [goldHandoffDraft, setGoldHandoffDraft] = useState<GoldAnalystHandoffDraft | null>(null);
+  const [ceoHandoffDraft, setCeoHandoffDraft] = useState<CEOAssignmentHandoffDraft | null>(null);
+  const [ceoGeminiReviewSourceId, setCeoGeminiReviewSourceId] = useState<string | null>(null);
   const missionRequestVersion = useRef(0);
 
   useEffect(() => {
@@ -122,6 +132,8 @@ export const AgentFileView: React.FC = () => {
     missionRequestVersion.current += 1;
     setMissionError(null);
     if (selectedAgentId !== '41') setGoldHandoffDraft(null);
+    if (!ceoHandoffDraft || selectedAgentId !== ceoHandoffDraft.targetAgentId) setCeoHandoffDraft(null);
+    if (selectedAgentId !== '06') setCeoGeminiReviewSourceId(null);
   }, [selectedAgentId]);
 
   const selectedAgent: AgentRecord = AGENT_REGISTRY.find(a => a.id === selectedAgentId) || AGENT_REGISTRY[0];
@@ -157,6 +169,7 @@ export const AgentFileView: React.FC = () => {
     setMissionError(null);
     try {
       let parentTaskId: string | undefined;
+      let executionModeOverride: 'PROPOSAL_ONLY' | undefined;
       if (selectedAgent.id === '41') {
         const goldInput = parseGoldOpportunityAnalysisInput(mission);
         if (goldHandoffDraft) {
@@ -168,12 +181,40 @@ export const AgentFileView: React.FC = () => {
           parentTaskId = sourceTask.id;
         }
       }
-      const createdTask = createAgentTask(selectedAgent, mission, { priority: taskPriority, ...(parentTaskId ? { parentTaskId } : {}) });
+      if (ceoHandoffDraft) {
+        const sourceTask = agentTasks.find(task => task.id === ceoHandoffDraft.sourceTaskId);
+        if (!sourceTask || selectedAgent.id !== ceoHandoffDraft.targetAgentId) {
+          throw new Error('La mission cible ne correspond plus au plan CEO sélectionné.');
+        }
+        const currentDraft = createCEOAssignmentHandoffDraft(sourceTask, selectedAgent.id);
+        if (currentDraft.toolId !== ceoHandoffDraft.toolId || currentDraft.missionType !== ceoHandoffDraft.missionType) {
+          throw new Error('Le profil cible ou son outil a changé depuis la préparation du transfert CEO.');
+        }
+        requireCEOAssignmentInputs(currentDraft, mission);
+        parentTaskId = sourceTask.id;
+      }
+      if (ceoGeminiReviewSourceId) {
+        const sourceTask = agentTasks.find(task => task.id === ceoGeminiReviewSourceId);
+        if (selectedAgent.id !== '06' || !sourceTask || sourceTask.status !== 'REVIEWED'
+          || sourceTask.result?.resultKind !== 'DETERMINISTIC_RESULT'
+          || !isCEOExecutivePlanData(sourceTask.result.data)) {
+          throw new Error('La revue Gemini doit être liée à un plan CEO local déjà relu.');
+        }
+        executionModeOverride = 'PROPOSAL_ONLY';
+        parentTaskId = sourceTask.id;
+      }
+      const createdTask = createAgentTask(selectedAgent, mission, {
+        priority: taskPriority,
+        ...(parentTaskId ? { parentTaskId } : {}),
+        ...(executionModeOverride ? { executionModeOverride } : {}),
+      });
       const queuedTasks = enqueueAgentTask(agentTasks, createdTask);
       if (!saveAgentTasks(queuedTasks)) throw new Error('Le stockage local n’a pas accepté la mission.');
       setAgentTasks(queuedTasks);
       setNewMissionText('');
       setGoldHandoffDraft(null);
+      setCeoHandoffDraft(null);
+      setCeoGeminiReviewSourceId(null);
       soundEngine.playSuccess();
     } catch (error) {
       if (error instanceof Error && error.message.includes('stockage')) {
@@ -199,6 +240,54 @@ export const AgentFileView: React.FC = () => {
     }
   };
 
+  const handlePrepareCEOAssignment = (sourceTask: AgentTask, targetAgentId: string) => {
+    try {
+      const draft = createCEOAssignmentHandoffDraft(sourceTask, targetAgentId);
+      setCeoHandoffDraft(draft);
+      setCeoGeminiReviewSourceId(null);
+      setSelectedAgentId(draft.targetAgentId);
+      setNewMissionText('');
+      setTaskPriority(draft.priority);
+      setMissionError(null);
+      soundEngine.playTick();
+    } catch (error) {
+      setMissionError(error instanceof Error ? error.message : 'La transmission CEO n’a pas pu être préparée.');
+      soundEngine.playAlert();
+    }
+  };
+
+  const handlePrepareCEOGeminiReview = (sourceTask: AgentTask) => {
+    if (sourceTask.agentId !== '06' || sourceTask.status !== 'REVIEWED'
+      || sourceTask.result?.resultKind !== 'DETERMINISTIC_RESULT'
+      || !isCEOExecutivePlanData(sourceTask.result.data)) {
+      setMissionError('La revue Gemini doit partir d’un plan CEO local déjà relu.');
+      soundEngine.playAlert();
+      return;
+    }
+    const plan = sourceTask.result.data;
+    const assignmentSummary = plan.assignments.map(assignment =>
+      `${assignment.targetV6RoleName}: ${assignment.dispatchState}; entrées attendues: ${assignment.requiredInputs.join(', ')}`,
+    ).join('\n');
+    const reviewMission = [
+      'Relis le plan préparatoire de CEO.AGENT. Signale seulement les lacunes, dépendances ou données à demander; ne crée aucune piste, estimation ou résultat absent des éléments ci-dessous.',
+      `Objectif: ${plan.objective}`,
+      `Plafond souhaité: ${plan.maximumSpendEur} EUR; ce chiffre n’est pas une autorisation de dépense.`,
+      'État vérifié par le plan: 0 opportunité confirmée, 0 EUR de revenu encaissé, 0 sous-mission transmise.',
+      assignmentSummary,
+    ].join('\n');
+    if (reviewMission.length > 2_000) {
+      setMissionError('Le résumé dépasse la limite de mission; examinez le plan local sans revue Gemini.');
+      soundEngine.playAlert();
+      return;
+    }
+    setCeoGeminiReviewSourceId(sourceTask.id);
+    setCeoHandoffDraft(null);
+    setSelectedAgentId('06');
+    setNewMissionText(reviewMission);
+    setMissionError(null);
+    soundEngine.playTick();
+  };
+
   const handleRunNextTask = async () => {
     if (isSubmittingMission || !nextRunnableTask) return;
     const requestVersion = ++missionRequestVersion.current;
@@ -218,8 +307,23 @@ export const AgentFileView: React.FC = () => {
       setAgentTasks(claim.tasks);
 
       const canonicalAgent = AGENT_REGISTRY.find(agent => agent.id === runningTask?.agentId);
-      if (!canonicalAgent || getAgentExecutionMode(canonicalAgent) !== runningTask.executionMode) {
+      const canonicalMode = canonicalAgent && getAgentExecutionMode(canonicalAgent);
+      const allowedCEOProposalReview = canonicalAgent?.id === '06'
+        && canonicalAgent.name === 'DIRECTOR.GENCY'
+        && canonicalMode === 'DETERMINISTIC'
+        && runningTask.executionMode === 'PROPOSAL_ONLY';
+      if (!canonicalAgent || (canonicalMode !== runningTask.executionMode && !allowedCEOProposalReview)) {
         throw new Error('Le profil enregistré ne correspond plus au registre d’exécution; mission bloquée.');
+      }
+      if (allowedCEOProposalReview) {
+        const reviewedSource = runningTask.parentTaskId
+          ? claim.tasks.find(task => task.id === runningTask?.parentTaskId)
+          : undefined;
+        if (!reviewedSource || reviewedSource.agentId !== '06' || reviewedSource.status !== 'REVIEWED'
+          || reviewedSource.result?.resultKind !== 'DETERMINISTIC_RESULT'
+          || !isCEOExecutivePlanData(reviewedSource.result.data)) {
+          throw new Error('Revue Gemini bloquée : une mission CEO source déjà relue est requise.');
+        }
       }
 
       const completedTask = runningTask.executionMode === 'DETERMINISTIC'
@@ -230,6 +334,8 @@ export const AgentFileView: React.FC = () => {
             runningTask.connectedTools[0] ?? '',
             runningTask.id,
             runningTask.mission,
+            undefined,
+            canonicalAgent.id === '06' ? buildLocalAgentExecutionContext(claim.tasks) : undefined,
           ),
         )
         : runningTask.executionMode === 'REMOTE_READ_ONLY'
@@ -294,7 +400,9 @@ export const AgentFileView: React.FC = () => {
     }));
   };
 
-  const missionRuntimeMessage = selectedAgentExecutionMode === 'REMOTE_READ_ONLY'
+  const missionRuntimeMessage = selectedAgent.id === '06'
+    ? `Alias V6 CEO.AGENT #01 · profil historique DIRECTOR.GENCY #06. Le plan local consulte le registre et la file du navigateur; il n’envoie aucune sous-mission. ${runtimeStatus?.available ? 'Une relecture Gemini reste facultative et sera lancée seulement après mise en file puis demande explicite; un coût fournisseur peut s’appliquer et IA TOWN ne le mesure pas.' : runtimeStatus?.reason === 'KEY_MISSING' ? 'Gemini est configuré sans clé serveur disponible; le plan local reste utilisable.' : 'Gemini est désactivé ou indisponible; le plan local reste utilisable.'}`
+    : selectedAgentExecutionMode === 'REMOTE_READ_ONLY'
     ? 'PROSPECTOR peut lancer une recherche BOAMP en lecture seule depuis le serveur IA TOWN. L’envoi des mots-clés et l’accès Internet ont lieu au lancement; seuls des avis publics ouverts avec échéance ISO interprétable sont retenus. L’accès à l’API est annoncé gratuit, les coûts d’hébergement/réseau ne sont pas mesurés. Le résultat n’est ni une validation juridique ni une promesse de revenu.'
     : selectedAgentExecutionMode === 'DETERMINISTIC'
       ? `Outil déterministe local disponible : ${selectedAgentTools[0]?.name ?? 'outil autorisé'}. Le résultat est calculé à partir des données de mission; aucun paiement, dépôt de candidature ou revenu confirmé n’est produit.`
@@ -572,6 +680,19 @@ export const AgentFileView: React.FC = () => {
                   <p>La valeur du marché, les coûts et la réserve restent vides. Saisissez et vérifiez ces hypothèses; la piste n’est pas une attribution ni un revenu.</p>
                 </div>
               )}
+              {ceoHandoffDraft && selectedAgent.id === ceoHandoffDraft.targetAgentId && (
+                <div role="status" className="rounded-lg border border-cyan-800 bg-cyan-950/30 px-3 py-2 text-[10px] text-cyan-100 space-y-1">
+                  <p>Mission préparée depuis le plan CEO relu {ceoHandoffDraft.sourceTaskId}; cible V6 : {ceoHandoffDraft.targetV6RoleName} / {ceoHandoffDraft.targetAgentName}.</p>
+                  <p>Renseignez les données vérifiables requises avant la mise en file :</p>
+                  <ul className="list-disc pl-4">{ceoHandoffDraft.requiredInputs.map(input => <li key={input}>{input}</li>)}</ul>
+                  <p>La mission restera liée à son plan source; sa mise en file ne signifie ni validation de l’opportunité ni dépense autorisée.</p>
+                </div>
+              )}
+              {ceoGeminiReviewSourceId && selectedAgent.id === '06' && (
+                <div role="status" className="rounded-lg border border-amber-800 bg-amber-950/20 px-3 py-2 text-[10px] text-amber-200">
+                  Relecture facultative du plan CEO {ceoGeminiReviewSourceId}. La mise en file ne contacte pas Gemini; l’exécution ultérieure enverra ce résumé au fournisseur et peut être facturée. Le coût en euros n’est pas mesuré.
+                </div>
+              )}
               <div className="flex gap-2">
                 <textarea
                   rows={selectedAgentExecutionMode === 'DETERMINISTIC' || selectedAgentExecutionMode === 'REMOTE_READ_ONLY' ? 4 : 2}
@@ -680,7 +801,7 @@ export const AgentFileView: React.FC = () => {
                         </summary>
                         <p className="mt-2 text-[10px] text-slate-400">Mission : {task.mission}</p>
                         {task.parentTaskId && (
-                          <p className="mt-2 text-[9px] font-mono-code text-cyan-300">Piste transmise depuis la mission PROSPECTOR {task.parentTaskId}; lien local enregistré, admissibilité non vérifiée.</p>
+                          <p className="mt-2 text-[9px] font-mono-code text-cyan-300">Mission liée depuis {agentTasks.find(parent => parent.id === task.parentTaskId)?.agentName ?? 'une mission source'} · {task.parentTaskId}; lien enregistré localement.</p>
                         )}
                         {task.result?.resultKind === 'PROPOSAL' && (
                           <>
@@ -697,6 +818,48 @@ export const AgentFileView: React.FC = () => {
                             <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{task.result.output}</p>
                             {task.result.data.dataKind === 'GOLD_OPPORTUNITY_ANALYSIS' && (
                               <a href={task.result.data.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-[10px] text-cyan-300 underline">Ouvrir l’avis BOAMP associé</a>
+                            )}
+                            {task.result.data.dataKind === 'CEO_EXECUTIVE_PLAN' && (
+                              <div className="mt-3 rounded-lg border border-cyan-900/80 bg-cyan-950/20 p-3 space-y-3">
+                                <div>
+                                  <h4 className="text-[10px] font-mono-code text-cyan-200">PLAN CEO · VUE LOCALE</h4>
+                                  <p className="mt-1 text-[10px] text-slate-300">{task.result.data.agentCount} profils · {task.result.data.buildingCount} bâtiments · {task.result.data.observedTasks.length} missions locales observées. Cette vue ne sonde aucun agent distant.</p>
+                                  <p className="mt-1 text-[10px] text-amber-200">Plafond souhaité : {task.result.data.maximumSpendEur.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}. Cela ne vaut pas autorisation de dépense. Opportunités confirmées : 0 · revenu encaissé : 0 € · sous-missions envoyées : {task.result.data.dispatchedTaskIds.length}.</p>
+                                  <p className="mt-1 text-[9px] text-slate-400">File locale : {task.result.data.monitoringSummary.queued} en attente · {task.result.data.monitoringSummary.running} en cours · {task.result.data.monitoringSummary.awaitingReview} à relire · {task.result.data.monitoringSummary.failed} en échec · {task.result.data.monitoringSummary.reviewedResults} relues.</p>
+                                </div>
+                                <ol className="space-y-2">
+                                  {task.result.data.assignments.map(assignment => (
+                                    <li key={assignment.agentId} className="rounded border border-slate-800 bg-slate-950/50 p-2 text-[10px]">
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <span className="font-mono-code text-cyan-100">{assignment.order}. {assignment.targetV6RoleName} · {assignment.agentName}</span>
+                                        <span className="text-slate-400">{assignment.priority} · {assignment.dispatchState} · état {assignment.currentVisualState}</span>
+                                      </div>
+                                      <p className="mt-1 text-slate-300">{assignment.purpose}</p>
+                                      <p className="mt-1 text-slate-400">Dépend de : {assignment.dependsOn.length ? assignment.dependsOn.join(', ') : 'aucune'}</p>
+                                      {task.status === 'REVIEWED' && assignment.dispatchState === 'WAITING_FOR_USER_INPUT' && (
+                                        <button type="button" onClick={() => handlePrepareCEOAssignment(task, assignment.agentId)} className="mt-2 text-cyan-300 underline underline-offset-2">
+                                          Préparer la mission · saisir les données manquantes
+                                        </button>
+                                      )}
+                                      {assignment.dispatchState !== 'WAITING_FOR_USER_INPUT' && (
+                                        <p className="mt-1 text-amber-300">Aucune transmission : l’agent est occupé, en erreur ou sans exécuteur disponible.</p>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ol>
+                                <details className="text-[9px] text-slate-400">
+                                  <summary className="cursor-pointer text-cyan-300">Afficher les données requises par mission</summary>
+                                  <div className="mt-2 space-y-2">{task.result.data.assignments.map(assignment => (
+                                    <p key={assignment.agentId}><strong className="text-slate-200">{assignment.targetV6RoleName} :</strong> {assignment.requiredInputs.join(' · ')}</p>
+                                  ))}</div>
+                                </details>
+                                {task.status === 'REVIEWED' && (
+                                  <button type="button" onClick={() => handlePrepareCEOGeminiReview(task)} className="text-[10px] text-amber-200 underline underline-offset-2">
+                                    Préparer une relecture Gemini facultative
+                                  </button>
+                                )}
+                                {task.result.data.warnings.map(warning => <p key={warning} className="text-[9px] text-amber-300">{warning}</p>)}
+                              </div>
                             )}
                             <p className="mt-2 text-[10px] font-mono-code text-amber-300">
                               Résultat local issu des données fournies. Aucune recherche web, publication, dépense, vente ni écriture bancaire n’a été exécutée.

@@ -8,6 +8,7 @@ import type { AgentTaskProposal } from './agentRuntimeClient';
 import type { AgentDeterministicResult } from './agentDeterministicExecutors';
 import { isAgentPublicOpportunityResult, type AgentPublicOpportunityResult } from './agentPublicOpportunity';
 import { getAgentEnforcedCapabilities, getAgentExecutionMode, getAgentTools } from './agentToolRegistry';
+import { parseCEOExecutiveObjective } from './ceoExecutivePlanner';
 
 export const MAX_AGENT_MISSION_LENGTH = 2_000;
 export const MAX_AGENT_TASKS = 200;
@@ -47,7 +48,7 @@ export interface AgentRuntimeDefinition {
   toolsAvailable: Array<{ name: string; connected: boolean; toolId?: string }>;
   permissions: { declared: string[]; enforced: string[] };
   model?: { provider: 'gemini'; mode: 'PROPOSAL_ONLY' };
-  acceptedMissions: Array<'TEXT_PROPOSAL' | 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH' | 'GOLD_OPPORTUNITY_ANALYSIS'>;
+  acceptedMissions: Array<'TEXT_PROPOSAL' | 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH' | 'GOLD_OPPORTUNITY_ANALYSIS' | 'EXECUTIVE_MISSION_PLANNING'>;
   dependencies: string[];
   dependenciesVerified: false;
   budgetMaxEur: number | null;
@@ -100,6 +101,7 @@ export interface CreateAgentTaskOptions {
   now?: string;
   priority?: AgentTaskPriority;
   deadlineAt?: string;
+  executionModeOverride?: 'PROPOSAL_ONLY';
 }
 
 const PRIORITY_RANK: Record<AgentTaskPriority, number> = {
@@ -123,6 +125,10 @@ function isValidTimestamp(value: string): boolean {
 export function buildAgentRuntimeDefinition(agent: AgentRecord): AgentRuntimeDefinition {
   const executionMode = getAgentExecutionMode(agent);
   const connectedTools = getAgentTools(agent);
+  const acceptedMissions: AgentRuntimeDefinition['acceptedMissions'] = [
+    ...(executionMode === 'PROPOSAL_ONLY' || agent.id === '06' ? ['TEXT_PROPOSAL' as const] : []),
+    ...connectedTools.map(tool => tool.missionType),
+  ];
   return {
     id: agent.id,
     name: agent.name,
@@ -141,12 +147,8 @@ export function buildAgentRuntimeDefinition(agent: AgentRecord): AgentRuntimeDef
       declared: [...agent.permissions],
       enforced: getAgentEnforcedCapabilities(agent),
     },
-    ...(executionMode === 'PROPOSAL_ONLY' ? { model: { provider: 'gemini' as const, mode: 'PROPOSAL_ONLY' as const } } : {}),
-    acceptedMissions: executionMode === 'PROPOSAL_ONLY'
-      ? ['TEXT_PROPOSAL']
-      : executionMode === 'DETERMINISTIC' || executionMode === 'REMOTE_READ_ONLY'
-        ? connectedTools.map(tool => tool.missionType)
-        : [],
+    ...(executionMode === 'PROPOSAL_ONLY' || agent.id === '06' ? { model: { provider: 'gemini' as const, mode: 'PROPOSAL_ONLY' as const } } : {}),
+    acceptedMissions,
     dependencies: [],
     dependenciesVerified: false,
     budgetMaxEur: executionMode === 'DETERMINISTIC' || executionMode === 'REMOTE_READ_ONLY' ? 0 : null,
@@ -188,8 +190,14 @@ export function createAgentTask(
   const priority = options.priority ?? 'NORMAL';
   if (!Object.hasOwn(PRIORITY_RANK, priority)) throw new Error('Priorité de mission invalide.');
 
-  const executionMode = getAgentExecutionMode(agent);
-  const connectedTools = getAgentTools(agent);
+  const ceoTool = getAgentTools(agent).find(tool => tool.targetV6Role.id === '01' && tool.targetV6Role.name === 'CEO.AGENT');
+  if (options.executionModeOverride === 'PROPOSAL_ONLY'
+    && (agent.id !== '06' || agent.name !== 'DIRECTOR.GENCY' || !ceoTool)) {
+    throw new Error('La proposition Gemini optionnelle est réservée au profil historique CEO.AGENT.');
+  }
+  const executionMode = options.executionModeOverride ?? getAgentExecutionMode(agent);
+  if (agent.id === '06' && executionMode === 'DETERMINISTIC') parseCEOExecutiveObjective(mission);
+  const connectedTools = executionMode === 'PROPOSAL_ONLY' ? [] : getAgentTools(agent);
   return {
     id,
     ...(options.parentTaskId ? { parentTaskId: options.parentTaskId } : {}),

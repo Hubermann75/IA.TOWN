@@ -1,14 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { AGENT_REGISTRY } from '../data/agentRegistry';
+import { buildLocalAgentExecutionContext } from './agentExecutionContext';
 import {
   createAgentTask,
   claimNextAgentTask,
+  recordAgentDeterministicResult,
   recordAgentPublicOpportunityResult,
   reviewAgentResult,
 } from './agentTaskEngine';
+import { executeRegisteredAgentTool, getAgentTools } from './agentToolRegistry';
 import { buildBoampNoticeUrl } from './agentPublicOpportunity';
-import { createGoldAnalystHandoffDraft } from './agentTaskHandoff';
+import { createCEOAssignmentHandoffDraft, createGoldAnalystHandoffDraft, requireCEOAssignmentInputs } from './agentTaskHandoff';
 import { isAgentTask, loadAgentTasks, saveAgentTasks, type AgentTaskStorage } from './agentTaskStorage';
 
 const FIXED_NOW = '2026-11-02T12:00:00.000Z';
@@ -53,6 +56,17 @@ function reviewedProspectorTask() {
   return reviewAgentResult(received, 'REVIEWED', '', FIXED_NOW);
 }
 
+function reviewedCEOTask() {
+  const agent = AGENT_REGISTRY.find(candidate => candidate.id === '06')!;
+  const tool = getAgentTools(agent)[0];
+  const mission = tool.exampleMission;
+  const queued = createAgentTask(agent, mission, { id: 'ceo-source', now: FIXED_NOW });
+  const running = claimNextAgentTask([queued], FIXED_NOW, false).claimedTask!;
+  const result = executeRegisteredAgentTool(agent, tool.id, running.id, running.mission, FIXED_NOW, buildLocalAgentExecutionContext([running]));
+  const received = recordAgentDeterministicResult(running, result, FIXED_NOW);
+  return reviewAgentResult(received, 'REVIEWED', '', FIXED_NOW);
+}
+
 test('Gold Analyst handoff requires a reviewed public result and leaves every financial assumption blank', () => {
   const source = reviewedProspectorTask();
   const draft = createGoldAnalystHandoffDraft(source, '26-12345');
@@ -71,6 +85,36 @@ test('Gold Analyst handoff requires a reviewed public result and leaves every fi
   assert.throws(() => createGoldAnalystHandoffDraft({ ...source, status: 'WAITING_REVIEW' }, '26-12345'), /déjà relue/);
   assert.throws(() => createGoldAnalystHandoffDraft(source, '26-99999'), /ne fait pas partie/);
   assert.throws(() => createGoldAnalystHandoffDraft({ ...source, agentId: '38' }, '26-12345'), /déjà relue/);
+});
+
+test('CEO handoff requires a reviewed local plan and preserves user-input gates and target-tool binding', () => {
+  const source = reviewedCEOTask();
+  const draft = createCEOAssignmentHandoffDraft(source, '71');
+  assert.equal(draft.sourceTaskId, source.id);
+  assert.equal(draft.sourceAgentName, 'DIRECTOR.GENCY');
+  assert.equal(draft.targetAgentName, 'SCOUT.AI');
+  assert.equal(draft.targetV6RoleName, 'DEMAND.SCOUT');
+  assert.equal(draft.missionType, 'DEMAND_EVIDENCE_ANALYSIS');
+  assert.equal(draft.toolId, 'opportunity.demand-evidence.v1');
+  assert.ok(draft.requiredInputs.some(input => input.includes('sources publiques')));
+  assert.throws(() => requireCEOAssignmentInputs(draft, JSON.stringify({ sources: [] })), /manquants ou vides/);
+  const suppliedMission = JSON.stringify({ sources: [{
+    sourceName: 'Source fournie par la personne', url: 'https://example.org/demande',
+    observedAt: '2026-11-02', signal: 'Signal fourni pour le dossier de test', strength: 3,
+  }] });
+  assert.doesNotThrow(() => requireCEOAssignmentInputs(draft, suppliedMission));
+  assert.throws(() => createCEOAssignmentHandoffDraft({ ...source, status: 'WAITING_REVIEW' }, '71'), /déjà relu/);
+  assert.throws(() => createCEOAssignmentHandoffDraft(source, '72'), /n’est pas ouverte/);
+
+  const target = AGENT_REGISTRY.find(candidate => candidate.id === draft.targetAgentId)!;
+  const child = createAgentTask(target, suppliedMission, {
+    id: 'ceo-child', parentTaskId: draft.sourceTaskId, now: FIXED_NOW, priority: draft.priority,
+  });
+  assert.equal(child.parentTaskId, source.id);
+  assert.equal(child.connectedTools[0], draft.toolId);
+  const values = new Map<string, string>();
+  const storage: AgentTaskStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => { values.set(key, value); } };
+  assert.equal(saveAgentTasks([source, child], storage), true);
 });
 
 test('agent tasks persist a bounded parentTaskId to retain a human-mediated handoff link', () => {

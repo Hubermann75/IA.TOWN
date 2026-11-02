@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { AGENT_REGISTRY } from '../data/agentRegistry';
+import { buildLocalAgentExecutionContext } from './agentExecutionContext';
 import {
   calculateMarginScenario,
   parseGoldOpportunityAnalysisInput,
@@ -245,7 +246,8 @@ test('all registered local tools execute through the queue and their results sur
     const agent = AGENT_REGISTRY.find(candidate => candidate.id === tool.allowedAgentId)!;
     const task = createAgentTask(agent, tool.exampleMission, { id: `opportunity-task-${index}`, now: '2026-11-02T12:00:00.000Z' });
     const running = claimNextAgentTask([task], '2026-11-02T12:00:01.000Z').claimedTask!;
-    const result = executeRegisteredAgentTool(agent, tool.id, running.id, running.mission, '2026-11-02T12:00:02.000Z');
+    const context = agent.id === '06' ? buildLocalAgentExecutionContext([]) : undefined;
+    const result = executeRegisteredAgentTool(agent, tool.id, running.id, running.mission, '2026-11-02T12:00:02.000Z', context);
     const waitingReview = recordAgentDeterministicResult(running, result, '2026-11-02T12:00:02.000Z');
     assert.equal(saveAgentTasks([waitingReview], storage), true, tool.id);
     assert.equal(loadAgentTasks(storage)[0].result?.resultKind, 'DETERMINISTIC_RESULT', tool.id);

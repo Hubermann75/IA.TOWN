@@ -8,6 +8,7 @@ export type AgentCapability =
   | 'LOCAL_PORTFOLIO_RANKING'
   | 'LOCAL_CENTMINE_RISK_SCREENING'
   | 'LOCAL_GOLD_OPPORTUNITY_ANALYSIS'
+  | 'LOCAL_EXECUTIVE_MISSION_PLANNING'
   | 'REMOTE_PUBLIC_TENDER_SEARCH';
 
 /** Runtime grants are separate from the descriptive permissions in AGENT_REGISTRY. */
@@ -15,6 +16,7 @@ const RUNTIME_GRANTS: Record<string, { id: string; name: string; type: 'TYPE_A_I
   '38': { id: '38', name: 'MINE.GUARD', type: 'TYPE_B_SERVICE', capabilities: ['LOCAL_CENTMINE_RISK_SCREENING'] },
   '39': { id: '39', name: 'MINER.PRIME', type: 'TYPE_B_SERVICE', capabilities: ['REMOTE_PUBLIC_TENDER_SEARCH'] },
   '41': { id: '41', name: 'ORE.REFINER', type: 'TYPE_C_HYBRID', capabilities: ['LOCAL_GOLD_OPPORTUNITY_ANALYSIS'] },
+  '06': { id: '06', name: 'DIRECTOR.GENCY', type: 'TYPE_A_IA', capabilities: ['LOCAL_EXECUTIVE_MISSION_PLANNING'] },
   '71': { id: '71', name: 'SCOUT.AI', type: 'TYPE_A_IA', capabilities: ['LOCAL_DEMAND_EVIDENCE_ANALYSIS'] },
   '73': { id: '73', name: 'MARGIN.PREDICTOR', type: 'TYPE_B_SERVICE', capabilities: ['LOCAL_MARGIN_CALCULATION'] },
   '74': { id: '74', name: 'REVENUE.ENGINE', type: 'TYPE_B_SERVICE', capabilities: ['LOCAL_PORTFOLIO_RANKING'] },

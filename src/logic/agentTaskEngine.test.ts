@@ -78,12 +78,36 @@ test('runtime profile separates declared tools and permissions from connected ca
   assert.equal(profile.budgetState, 'UNCONFIGURED');
 });
 
+test('CEO keeps its deterministic planner and gates optional Gemini proposals to the legacy CEO profile', () => {
+  const director = AGENT_REGISTRY.find(agent => agent.id === '06')!;
+  const profile = buildAgentRuntimeDefinition(director);
+  assert.equal(profile.executionMode, 'DETERMINISTIC');
+  assert.deepEqual(profile.model, { provider: 'gemini', mode: 'PROPOSAL_ONLY' });
+  assert.ok(profile.acceptedMissions.includes('EXECUTIVE_MISSION_PLANNING'));
+  assert.ok(profile.acceptedMissions.includes('TEXT_PROPOSAL'));
+
+  const localMission = JSON.stringify({ objective: 'Préparer un plan commercial sans dépense.', maximumSpendEur: 0 });
+  const localTask = createAgentTask(director, localMission, { id: 'ceo-local', now: FIXED_NOW });
+  assert.equal(localTask.executionMode, 'DETERMINISTIC');
+  assert.deepEqual(localTask.connectedTools, ['ai-gency.ceo-executive-planning.v1']);
+  assert.throws(() => createAgentTask(director, 'texte libre'), /JSON/);
+
+  const proposalTask = createAgentTask(director, 'Relis les dépendances du plan local sans inventer de résultat.', {
+    id: 'ceo-gemini-review', now: FIXED_NOW, executionModeOverride: 'PROPOSAL_ONLY', parentTaskId: 'ceo-local',
+  });
+  assert.equal(proposalTask.executionMode, 'PROPOSAL_ONLY');
+  assert.deepEqual(proposalTask.connectedTools, []);
+  assert.equal(proposalTask.budgetMaxEur, null);
+  assert.equal(proposalTask.parentTaskId, 'ceo-local');
+  assert.throws(() => createAgentTask(makeAgent(), 'Proposition', { executionModeOverride: 'PROPOSAL_ONLY', now: FIXED_NOW }), /réservée/);
+});
+
 test('normalized runtime registry covers 94 unique legacy profiles and only lists registered capabilities', () => {
   assert.equal(AGENT_RUNTIME_REGISTRY.length, 94);
   assert.equal(new Set(AGENT_RUNTIME_REGISTRY.map(agent => agent.id)).size, 94);
   assert.deepEqual(validateAgentRuntimeRegistry(), { valid: true, issues: [] });
-  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'PROPOSAL_ONLY').length, 35);
-  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'DETERMINISTIC').length, 7);
+  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'PROPOSAL_ONLY').length, 34);
+  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'DETERMINISTIC').length, 8);
   assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'REMOTE_READ_ONLY').length, 1);
   assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'UNAVAILABLE').length, 51);
 });

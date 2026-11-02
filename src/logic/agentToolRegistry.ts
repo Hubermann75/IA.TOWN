@@ -1,6 +1,7 @@
 import type { AgentRecord } from '../types/town';
 import {
   runCompetitorComparison,
+  runCEOExecutivePlanner,
   runDemandEvidenceAnalyzer,
   runGoldOpportunityAnalysis,
   runMarginCalculator,
@@ -9,6 +10,7 @@ import {
   runValidationPlan,
   type AgentDeterministicResult,
 } from './agentDeterministicExecutors';
+import type { AgentExecutionContext } from './agentExecutionContext';
 import { authorizeAgentCapability, getEnforcedCapabilities, type AgentCapability } from './agentPermissionEngine';
 import { BOAMP_PROSPECTOR_TOOL_ID } from './agentPublicOpportunity';
 
@@ -19,16 +21,31 @@ export interface AgentToolDefinition {
   allowedAgentId: string;
   allowedAgentName: string;
   requiredCapability: AgentCapability;
-  missionType: 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH' | 'GOLD_OPPORTUNITY_ANALYSIS';
+  missionType: 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH' | 'GOLD_OPPORTUNITY_ANALYSIS' | 'EXECUTIVE_MISSION_PLANNING';
   executionMode: 'DETERMINISTIC' | 'REMOTE_READ_ONLY';
   exampleMission: string;
   associatedTest: string;
   sideEffects: false;
   costEur: 0;
-  execute?: (agent: AgentRecord, taskId: string, mission: string, now?: string) => AgentDeterministicResult;
+  execute?: (agent: AgentRecord, taskId: string, mission: string, now?: string, context?: AgentExecutionContext) => AgentDeterministicResult;
 }
 
 export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
+  {
+    id: 'ai-gency.ceo-executive-planning.v1',
+    name: 'Planificateur exécutif local CEO.AGENT',
+    targetV6Role: { id: '01', name: 'CEO.AGENT', building: 'AI.GENCY' },
+    allowedAgentId: '06',
+    allowedAgentName: 'DIRECTOR.GENCY',
+    requiredCapability: 'LOCAL_EXECUTIVE_MISSION_PLANNING',
+    missionType: 'EXECUTIVE_MISSION_PLANNING',
+    executionMode: 'DETERMINISTIC',
+    exampleMission: JSON.stringify({ objective: 'Organiser une mission pour identifier une opportunité de produit numérique rentable, sans engager de dépenses.', maximumSpendEur: 0 }, null, 2),
+    associatedTest: 'agentTools.test.ts::CEO plan inspects the live registry and prepares only input-blocked, non-spending missions',
+    sideEffects: false,
+    costEur: 0,
+    execute: runCEOExecutivePlanner,
+  },
   {
     id: 'centmine.mine-guard-screening.v1',
     name: 'Filtre de risques local MINE.GUARD',
@@ -174,10 +191,11 @@ export function executeRegisteredAgentTool(
   taskId: string,
   mission: string,
   now?: string,
+  context?: AgentExecutionContext,
 ): AgentDeterministicResult {
   const tool = getAgentTools(agent).find(candidate => candidate.id === toolId);
   if (!tool || tool.executionMode !== 'DETERMINISTIC' || !tool.execute) {
     throw new Error('Aucun exécuteur local déterministe autorisé n’est enregistré pour ce profil.');
   }
-  return tool.execute(agent, taskId, mission, now);
+  return tool.execute(agent, taskId, mission, now, context);
 }

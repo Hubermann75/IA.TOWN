@@ -1,6 +1,8 @@
 import type { AgentRecord } from '../types/town';
 import { authorizeAgentCapability } from './agentPermissionEngine';
 import { buildBoampNoticeUrl } from './agentPublicOpportunity';
+import type { AgentExecutionContext } from './agentExecutionContext';
+import { isCEOExecutivePlanData, parseCEOExecutiveObjective, prepareCEOExecutivePlan, type CEOExecutivePlanData } from './ceoExecutivePlanner';
 
 export interface MarginCalculationInput {
   unitPriceEur: number;
@@ -115,6 +117,8 @@ export interface GoldOpportunityAnalysisData extends GoldOpportunityAnalysisInpu
   warnings: string[];
 }
 
+export type { CEOExecutivePlanData } from './ceoExecutivePlanner';
+
 export type AgentDeterministicResultData =
   | MarginCalculationData
   | DemandEvidenceData
@@ -122,7 +126,8 @@ export type AgentDeterministicResultData =
   | ValidationPlanData
   | PortfolioRankingData
   | MineRiskScreeningData
-  | GoldOpportunityAnalysisData;
+  | GoldOpportunityAnalysisData
+  | CEOExecutivePlanData;
 
 export interface AgentDeterministicResult {
   requestId: string;
@@ -154,6 +159,9 @@ const GOLD_ANALYST_TOOL_ID = 'centmine.gold-analyst-economic-screening.v1';
 const GOLD_ANALYST_AGENT_ID = '41';
 const GOLD_ANALYST_AGENT_NAME = 'ORE.REFINER';
 const MAX_GOLD_ANALYSIS_EUR = 50_000_000;
+const CEO_PLANNING_TOOL_ID = 'ai-gency.ceo-executive-planning.v1';
+const CEO_PLANNING_AGENT_ID = '06';
+const CEO_PLANNING_AGENT_NAME = 'DIRECTOR.GENCY';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -361,6 +369,33 @@ export function runGoldOpportunityAnalysis(
     ...data.warnings.map(warning => `Limite : ${warning}`),
   ].join('\n');
   return createResult(agent, taskId, GOLD_ANALYST_TOOL_ID, output, data, now);
+}
+
+export function runCEOExecutivePlanner(
+  agent: AgentRecord,
+  taskId: string,
+  mission: string,
+  now = new Date().toISOString(),
+  context?: AgentExecutionContext,
+): AgentDeterministicResult {
+  if (agent.id !== CEO_PLANNING_AGENT_ID || agent.name !== CEO_PLANNING_AGENT_NAME
+    || !authorizeAgentCapability(agent, 'LOCAL_EXECUTIVE_MISSION_PLANNING')) {
+    throw new Error('Permission refusée : ce profil n’est pas autorisé à préparer un plan de direction.');
+  }
+  if (!context) throw new Error('Le plan CEO exige un snapshot du registre et de la file locale.');
+  const objective = parseCEOExecutiveObjective(mission);
+  const data = prepareCEOExecutivePlan(objective, context, taskId);
+  const inputNeeded = data.assignments.filter(assignment => assignment.dispatchState === 'WAITING_FOR_USER_INPUT').length;
+  const unavailable = data.assignments.filter(assignment => assignment.dispatchState === 'NO_EXECUTOR').length;
+  const output = [
+    `RAPPORT CEO.AGENT · objectif : ${data.objective}`,
+    `Snapshot local : ${data.agentCount} profils et ${data.buildingCount} bâtiments consultés; files observées : ${data.observedTasks.length} missions (hors mission CEO en cours).`,
+    `Priorités préparées : ${data.assignments.length}; envoi au planificateur : 0; entrées utilisateur requises : ${inputNeeded}; rôles sans exécuteur : ${unavailable}.`,
+    ...data.assignments.map(assignment => `${assignment.order}. ${assignment.targetV6RoleName} / ${assignment.agentName} · priorité ${assignment.priority} · ${assignment.dispatchState} · dépend de ${assignment.dependsOn.length ? assignment.dependsOn.join(', ') : 'aucune'}.`),
+    'Aucune opportunité ni aucun revenu n’a été inventé : aucune piste économique n’est encore identifiée et le revenu confirmé reste à 0 €.',
+    'Le planificateur local existe, mais aucune sous-mission n’est transmise avant réception des sources et hypothèses exigées par chaque outil.',
+  ].join('\n');
+  return createResult(agent, taskId, CEO_PLANNING_TOOL_ID, output, data, now);
 }
 
 function parseExactJsonObject(raw: string, fields: string[]): Record<string, unknown> {
@@ -934,6 +969,7 @@ function isMarginCalculationData(value: unknown): value is MarginCalculationData
 
 export function isAgentDeterministicResultData(toolId: string, value: unknown): value is AgentDeterministicResultData {
   switch (toolId) {
+    case CEO_PLANNING_TOOL_ID: return isCEOExecutivePlanData(value);
     case 'opportunity.margin-calculator.v1': return isMarginCalculationData(value);
     case DEMAND_TOOL_ID: return isDemandEvidenceData(value);
     case COMPETITOR_TOOL_ID: return isCompetitorAnalysisData(value);

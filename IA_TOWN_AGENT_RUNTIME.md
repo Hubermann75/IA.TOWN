@@ -1,6 +1,6 @@
 # IA TOWN — Runtime des agents
 
-Le registre de 94 profils reste un catalogue historique. Le runtime propose des appels Gemini à la demande pour les profils `TYPE_A_IA` et `TYPE_C_HYBRID`, sept outils déterministes locaux ciblés et un connecteur public distant en lecture seule pour le pilote PROSPECTOR. Ces composants limités ne font pas des 94 profils des agents autonomes ni un catalogue V6 complet. Aucun exécuteur ici ne lance de commande système ou ne touche aux paiements, aux appareils ou aux comptes.
+Le registre de 94 profils reste un catalogue historique. Le runtime propose des appels Gemini à la demande pour les profils `TYPE_A_IA` et `TYPE_C_HYBRID`, huit outils déterministes locaux ciblés et un connecteur public distant en lecture seule pour le pilote PROSPECTOR. Ces composants limités ne font pas des 94 profils des agents autonomes ni un catalogue V6 complet. Aucun exécuteur ici ne lance de commande système ou ne touche aux paiements, aux appareils ou aux comptes.
 
 ## Activation explicite
 
@@ -42,7 +42,15 @@ Les missions et propositions sont enregistrées sous `IA_TOWN_AGENT_TASKS_V1` da
 
 Une recherche PROSPECTOR marquée comme relue peut transmettre un avis individuel au formulaire GOLD ANALYST. Le brouillon reprend le titre et l’identifiant BOAMP, tandis que les montants et la réserve restent vides. La file valide ces hypothèses avant de créer la mission et conserve l’identifiant source dans `parentTaskId`. Cette liaison supervisée est testée et locale; elle ne constitue pas un bus autonome entre agents. L’avis source n’est pas revérifié au moment du calcul.
 
-L’interface garde une distinction explicite entre outils/permissions déclarés et capacités connectées/appliquées. Le registre d’exécution normalisé contient 94 profils historiques : sept exécuteurs déterministes locaux ciblés, un pilote distant public en lecture seule, 35 profils de proposition Gemini conditionnelle et 51 rôles sans exécuteur. Ces huit profils outillés ne sont pas huit agents V6 complets : le catalogue n’est pas réconcilié avec les 94 noms et répartitions du cahier des charges, les communications entre agents sont absentes et le circuit économique externe n’est pas réalisé. Les outils non connectés, permissions non appliquées, dépendances non vérifiées, budgets non configurés et tests par rôle sont signalés comme tels.
+### CEO.AGENT — planification exécutive supervisée
+
+Le rôle cible V6 `CEO.AGENT` #01 est relié, sans renommer le registre historique, à `DIRECTOR.GENCY` #06 dans `AI.GENCY`. Son outil local `ai-gency.ceo-executive-planning.v1` exige un objectif JSON borné et un plafond souhaité. Ce plafond n’accorde aucune permission financière. Le seul grant ajouté est `LOCAL_EXECUTIVE_MISSION_PLANNING`; aucune permission de budget, signature ou négociation n’est accordée.
+
+Lors de l’exécution, le plan consulte les 94 profils, les 16 bâtiments et jusqu’à 200 résumés de missions conservés dans le navigateur. Il ne copie pas les textes de missions dans le contexte envoyé au planificateur; les états ne sont qu’un instantané local et ne sondent pas de processus agents distants. Le rapport prépare cinq tâches pour les rôles locaux V6 80 à 84, mais n’en crée et n’en envoie aucune. Les liens vers les rôles apparaissent dans la fiche seulement après relecture du résultat CEO. Avant la mise en file, l’utilisateur doit compléter les champs essentiels; le profil cible reste chargé de vérifier le schéma complet pendant l’exécution. La tâche enfant conserve le `parentTaskId` du plan source. Cette coordination est médiée par l’utilisateur, pas un bus d’agents.
+
+Une relecture Gemini du plan peut être préparée comme une mission séparée après revue humaine. La mise en file n’appelle pas le fournisseur; l’utilisateur doit ensuite lancer explicitement la mission. La route reste une proposition sans outils avec limite de six demandes par minute, `store: false` et 900 jetons maximum. Aucune relecture Gemini n’a été appelée pendant les vérifications et son coût en euros n’est pas mesuré.
+
+L’interface garde une distinction explicite entre outils/permissions déclarés et capacités connectées/appliquées. Le registre d’exécution normalisé contient 94 profils historiques : huit exécuteurs déterministes locaux ciblés, un pilote distant public en lecture seule, 34 profils de proposition Gemini conditionnelle et 51 rôles sans exécuteur. Ces neuf profils outillés ne sont pas neuf agents V6 complets : le catalogue n’est pas réconcilié avec les 94 noms et répartitions du cahier des charges, les communications autonomes entre agents sont absentes et le circuit économique externe n’est pas réalisé. Les outils non connectés, permissions non appliquées, dépendances non vérifiées, budgets non configurés et tests par rôle sont signalés comme tels.
 
 En développement, Vite monte les routes API. Pour le serveur de production, exécute `npm run build`, puis `npm start` avec les mêmes variables d’environnement.
 

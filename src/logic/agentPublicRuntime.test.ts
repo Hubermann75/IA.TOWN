@@ -3,7 +3,7 @@ import test from 'node:test';
 import express from 'express';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { createAgentRuntimeRouter } from '../../server/agentRuntime';
+import { buildAgentProposalSystemInstruction, createAgentRuntimeRouter } from '../../server/agentRuntime';
 
 const validResult = {
   requestId: 'request-route-test',
@@ -31,6 +31,15 @@ const validResult = {
     opportunities: [],
   },
 };
+
+test('CEO Gemini proposal prompt preserves the V6 alias and blocks fabricated evidence, dispatch, spending, and approval', () => {
+  const instruction = buildAgentProposalSystemInstruction({ id: '06', name: 'DIRECTOR.GENCY', type: 'TYPE_A_IA' });
+  assert.match(instruction, /CEO.AGENT V6 #01/);
+  assert.match(instruction, /n’invente aucune opportunité/);
+  assert.match(instruction, /ne constitue jamais une autorisation/);
+  assert.match(instruction, /ni distribuer une sous-mission/);
+  assert.match(instruction, /proposition textuelle facultative/);
+});
 
 test('Prospector API is same-origin, profile-bound, and calls only its injected read-only search', async t => {
   let searchCalls = 0;
