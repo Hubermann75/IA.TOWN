@@ -45,7 +45,15 @@
 - Le profil historique `ORE.REFINER` (ID 41) exécute localement le rôle pilote V6 15 `GOLD ANALYST` via `centmine.gold-analyst-economic-screening.v1`; son grant est dédié et l’outil n’a aucun effet externe.
 - À partir d’un identifiant BOAMP et de montants entrés manuellement, il calcule la réserve de risque, les coûts estimés totaux, le seuil de valeur contractuelle, le résultat projeté et la marge. L’identifiant produit un lien source officiel, mais l’avis, son échéance, les coûts et l’admissibilité ne sont pas revérifiés.
 - Les chiffres sont des hypothèses fournies par l’utilisateur : l’outil n’extrait pas la valeur du marché ni ses coûts. Le revenu confirmé est toujours fixé à 0 €; le résultat affiché ne signifie ni attribution, ni commande, ni encaissement. Aucun registre comptable ni agent bancaire n’est appelé.
-- Validation du checkpoint GOLD ANALYST : `npm test` 60/60 réussis; `npm run lint` (`tsc --noEmit`) réussi; `npm run build` réussi pour le client et le serveur. Le bundle JavaScript minifié est de 982,84 kB (avertissement au-dessus du seuil de 500 kB); le precache PWA est de 26 839,29 KiB. Vite signale aussi des imports sans extension dans sa configuration de chargement native.
+- Validation du checkpoint GOLD ANALYST seul : `npm test` 60/60 réussis; `npm run lint` (`tsc --noEmit`) réussi; `npm run build` réussi pour le client et le serveur. Le checkpoint courant, après ajout du transfert, est détaillé ci-dessous.
+
+### Transfert supervisé PROSPECTOR → GOLD ANALYST
+
+- Un avis BOAMP ne peut être transmis depuis l’interface qu’après avoir marqué sa recherche PROSPECTOR comme relue. Le transfert s’appuie sur un résultat distant dont le profil et le lien BOAMP sont validés.
+- Le formulaire GOLD ANALYST reçoit le titre, l’identifiant, l’échéance et l’horodatage de collecte de l’avis. Les cinq hypothèses financières sont laissées à `null`; aucun prix, coût ni taux de risque n’est supposé.
+- La file refuse d’enregistrer une mission GOLD ANALYST tant que ses hypothèses ne passent pas le parseur borné. La tâche financière enregistre le `parentTaskId` de la recherche PROSPECTOR dans `localStorage` et l’affiche dans son historique.
+- Ce transfert demeure humain et local au navigateur; ce n’est pas encore un bus autonome entre agents, une base serveur ou une vérification d’admissibilité. La recherche source reste seulement consultée et relue; l’analyse n’entraîne aucune candidature, vente ou écriture bancaire.
+- Validation du checkpoint courant : `npm test` 62/62 réussis; `npm run lint` (`tsc --noEmit`) réussi; `npm run build` réussi pour le client et le serveur. Le bundle JavaScript minifié est de 985,81 kB (avertissement au-dessus du seuil de 500 kB); le precache PWA est de 26 842,26 KiB. Vite signale aussi deux imports sans extension dans sa configuration de chargement native.
 
 ---
 

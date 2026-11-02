@@ -29,6 +29,8 @@ import {
 } from '../logic/agentTaskEngine';
 import { readAgentTaskStore, saveAgentTasks } from '../logic/agentTaskStorage';
 import { executeRegisteredAgentTool, getAgentExecutionMode, getAgentTools } from '../logic/agentToolRegistry';
+import { parseGoldOpportunityAnalysisInput } from '../logic/agentDeterministicExecutors';
+import { createGoldAnalystHandoffDraft, type GoldAnalystHandoffDraft } from '../logic/agentTaskHandoff';
 import { RobotAvatar, RobotRoleDesign } from './RobotAvatar';
 import { soundEngine } from '../utils/soundEngine';
 import { 
@@ -91,6 +93,7 @@ export const AgentFileView: React.FC = () => {
   const [taskStorageWarning, setTaskStorageWarning] = useState<string | null>(initialTaskStore.warning ?? null);
   const [missionError, setMissionError] = useState<string | null>(null);
   const [isSubmittingMission, setIsSubmittingMission] = useState(false);
+  const [goldHandoffDraft, setGoldHandoffDraft] = useState<GoldAnalystHandoffDraft | null>(null);
   const missionRequestVersion = useRef(0);
 
   useEffect(() => {
@@ -118,6 +121,7 @@ export const AgentFileView: React.FC = () => {
   useEffect(() => {
     missionRequestVersion.current += 1;
     setMissionError(null);
+    if (selectedAgentId !== '41') setGoldHandoffDraft(null);
   }, [selectedAgentId]);
 
   const selectedAgent: AgentRecord = AGENT_REGISTRY.find(a => a.id === selectedAgentId) || AGENT_REGISTRY[0];
@@ -152,11 +156,24 @@ export const AgentFileView: React.FC = () => {
     if (!mission || isSubmittingMission || !taskStorageAvailable || agentTasks.length >= 200) return;
     setMissionError(null);
     try {
-      const createdTask = createAgentTask(selectedAgent, mission, { priority: taskPriority });
+      let parentTaskId: string | undefined;
+      if (selectedAgent.id === '41') {
+        const goldInput = parseGoldOpportunityAnalysisInput(mission);
+        if (goldHandoffDraft) {
+          const sourceTask = agentTasks.find(task => task.id === goldHandoffDraft.sourceTaskId);
+          if (!sourceTask || goldInput.boampNoticeId !== goldHandoffDraft.notice.noticeId) {
+            throw new Error('La référence BOAMP ne correspond plus à la piste PROSPECTOR sélectionnée. Reprenez une piste relue ou le modèle vierge.');
+          }
+          createGoldAnalystHandoffDraft(sourceTask, goldInput.boampNoticeId);
+          parentTaskId = sourceTask.id;
+        }
+      }
+      const createdTask = createAgentTask(selectedAgent, mission, { priority: taskPriority, ...(parentTaskId ? { parentTaskId } : {}) });
       const queuedTasks = enqueueAgentTask(agentTasks, createdTask);
       if (!saveAgentTasks(queuedTasks)) throw new Error('Le stockage local n’a pas accepté la mission.');
       setAgentTasks(queuedTasks);
       setNewMissionText('');
+      setGoldHandoffDraft(null);
       soundEngine.playSuccess();
     } catch (error) {
       if (error instanceof Error && error.message.includes('stockage')) {
@@ -164,6 +181,20 @@ export const AgentFileView: React.FC = () => {
         setTaskStorageWarning(error.message);
       }
       setMissionError(error instanceof Error ? error.message : 'La mission n’a pas pu être enregistrée.');
+      soundEngine.playAlert();
+    }
+  };
+
+  const handlePrepareGoldAnalystHandoff = (sourceTask: AgentTask, noticeId: string) => {
+    try {
+      const draft = createGoldAnalystHandoffDraft(sourceTask, noticeId);
+      setGoldHandoffDraft(draft);
+      setSelectedAgentId(draft.targetAgentId);
+      setNewMissionText(draft.mission);
+      setMissionError(null);
+      soundEngine.playTick();
+    } catch (error) {
+      setMissionError(error instanceof Error ? error.message : 'La transmission de cette piste a échoué.');
       soundEngine.playAlert();
     }
   };
@@ -534,6 +565,13 @@ export const AgentFileView: React.FC = () => {
               <div className={`rounded-lg border px-3 py-2 text-[11px] font-mono-code ${selectedAgentExecutionMode === 'REMOTE_READ_ONLY' || selectedAgentExecutionMode === 'DETERMINISTIC' ? 'border-cyan-800 bg-cyan-950/30 text-cyan-200' : runtimeStatus?.available && selectedAgent.type !== 'TYPE_B_SERVICE' ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300' : 'border-amber-800 bg-amber-950/20 text-amber-300'}`}>
                 {missionRuntimeMessage}
               </div>
+              {goldHandoffDraft && selectedAgent.id === '41' && (
+                <div role="status" className="rounded-lg border border-cyan-800 bg-cyan-950/30 px-3 py-2 text-[10px] text-cyan-100 space-y-1">
+                  <p>Transmission relue : PROSPECTOR · avis {goldHandoffDraft.notice.noticeId} · échéance source {goldHandoffDraft.notice.deadlineAt} · collecte {new Date(goldHandoffDraft.fetchedAt).toLocaleString('fr-FR')}.</p>
+                  <a href={goldHandoffDraft.notice.sourceUrl} target="_blank" rel="noreferrer" className="inline-block text-cyan-300 underline">Ouvrir l’avis BOAMP source</a>
+                  <p>La valeur du marché, les coûts et la réserve restent vides. Saisissez et vérifiez ces hypothèses; la piste n’est pas une attribution ni un revenu.</p>
+                </div>
+              )}
               <div className="flex gap-2">
                 <textarea
                   rows={selectedAgentExecutionMode === 'DETERMINISTIC' || selectedAgentExecutionMode === 'REMOTE_READ_ONLY' ? 4 : 2}
@@ -572,7 +610,10 @@ export const AgentFileView: React.FC = () => {
               {(selectedAgentExecutionMode === 'DETERMINISTIC' || selectedAgentExecutionMode === 'REMOTE_READ_ONLY') && selectedAgentTools[0] && (
                 <button
                   type="button"
-                  onClick={() => setNewMissionText(selectedAgentTools[0].exampleMission)}
+                  onClick={() => {
+                    setNewMissionText(selectedAgentTools[0].exampleMission);
+                    if (selectedAgent.id === '41') setGoldHandoffDraft(null);
+                  }}
                   className="text-[9px] font-mono-code text-cyan-300 underline underline-offset-2"
                 >
                   Insérer le modèle JSON · {selectedAgentTools[0].name}
@@ -638,6 +679,9 @@ export const AgentFileView: React.FC = () => {
                           <span>{new Date(task.updatedAt).toLocaleString('fr-FR')} · tentative {task.attempts}</span>
                         </summary>
                         <p className="mt-2 text-[10px] text-slate-400">Mission : {task.mission}</p>
+                        {task.parentTaskId && (
+                          <p className="mt-2 text-[9px] font-mono-code text-cyan-300">Piste transmise depuis la mission PROSPECTOR {task.parentTaskId}; lien local enregistré, admissibilité non vérifiée.</p>
+                        )}
                         {task.result?.resultKind === 'PROPOSAL' && (
                           <>
                             <p className="mt-2 text-[9px] text-slate-500">{task.result.model} · {task.result.durationMs} ms</p>
@@ -670,6 +714,13 @@ export const AgentFileView: React.FC = () => {
                                   <li key={notice.noticeId} className="rounded border border-slate-800 bg-slate-950/60 p-2 text-[10px]">
                                     <a href={notice.sourceUrl} target="_blank" rel="noreferrer" className="text-cyan-200 underline">{notice.title}</a>
                                     <p className="mt-1 text-slate-400">Avis {notice.noticeId} · échéance source {notice.deadlineAt}{notice.contractType ? ` · ${notice.contractType}` : ''}</p>
+                                    {task.status === 'REVIEWED' ? (
+                                      <button type="button" onClick={() => handlePrepareGoldAnalystHandoff(task, notice.noticeId)} className="mt-2 text-cyan-300 underline underline-offset-2">
+                                        Préparer une analyse GOLD ANALYST
+                                      </button>
+                                    ) : (
+                                      <p className="mt-2 text-slate-500">Relisez d’abord le résultat PROSPECTOR pour transmettre cet avis.</p>
+                                    )}
                                   </li>
                                 ))}
                               </ul>

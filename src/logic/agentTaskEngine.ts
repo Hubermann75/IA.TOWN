@@ -71,6 +71,7 @@ export interface AgentTaskEvent {
 
 export interface AgentTask {
   id: string;
+  parentTaskId?: string;
   agentId: string;
   agentName: string;
   building: string;
@@ -95,6 +96,7 @@ export interface AgentTask {
 
 export interface CreateAgentTaskOptions {
   id?: string;
+  parentTaskId?: string;
   now?: string;
   priority?: AgentTaskPriority;
   deadlineAt?: string;
@@ -180,6 +182,9 @@ export function createAgentTask(
 
   const id = options.id ?? createId();
   if (!id.trim()) throw new Error('Identifiant de mission invalide.');
+  if (options.parentTaskId !== undefined && (!options.parentTaskId.trim() || options.parentTaskId.length > 100)) {
+    throw new Error('Identifiant de mission source invalide.');
+  }
   const priority = options.priority ?? 'NORMAL';
   if (!Object.hasOwn(PRIORITY_RANK, priority)) throw new Error('Priorité de mission invalide.');
 
@@ -187,6 +192,7 @@ export function createAgentTask(
   const connectedTools = getAgentTools(agent);
   return {
     id,
+    ...(options.parentTaskId ? { parentTaskId: options.parentTaskId } : {}),
     agentId: agent.id,
     agentName: agent.name,
     building: agent.buildingName,

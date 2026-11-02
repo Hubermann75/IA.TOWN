@@ -99,6 +99,7 @@ export function isAgentTask(value: unknown): value is AgentTask {
   if (!value || typeof value !== 'object') return false;
   const task = value as Partial<AgentTask>;
   return typeof task.id === 'string' && task.id.length > 0
+    && (task.parentTaskId === undefined || (typeof task.parentTaskId === 'string' && task.parentTaskId.trim().length > 0 && task.parentTaskId.length <= 100))
     && typeof task.agentId === 'string' && /^\d{2}$/.test(task.agentId)
     && typeof task.agentName === 'string'
     && typeof task.building === 'string'
