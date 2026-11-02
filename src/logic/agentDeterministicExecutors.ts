@@ -1,5 +1,6 @@
 import type { AgentRecord } from '../types/town';
 import { authorizeAgentCapability } from './agentPermissionEngine';
+import { buildBoampNoticeUrl } from './agentPublicOpportunity';
 
 export interface MarginCalculationInput {
   unitPriceEur: number;
@@ -90,13 +91,38 @@ export interface MineRiskScreeningData {
   financialActionExecuted: false;
 }
 
+export interface GoldOpportunityAnalysisInput {
+  opportunityName: string;
+  boampNoticeId: string;
+  estimatedContractRevenueEur: number;
+  estimatedDeliveryCostEur: number;
+  estimatedBidPreparationCostEur: number;
+  estimatedOtherFeesEur: number;
+  riskReservePercent: number;
+}
+
+export interface GoldOpportunityAnalysisData extends GoldOpportunityAnalysisInput {
+  dataKind: 'GOLD_OPPORTUNITY_ANALYSIS';
+  sourceUrl: string;
+  sourceVerificationState: 'NOTICE_LINK_NOT_RECHECKED';
+  riskReserveEur: number;
+  totalEstimatedCostEur: number;
+  projectedOperatingResultEur: number;
+  projectedMarginPercent: number;
+  breakEvenContractValueEur: number;
+  revenueKind: 'USER_ESTIMATED_TENDER_VALUE';
+  confirmedRevenueEur: 0;
+  warnings: string[];
+}
+
 export type AgentDeterministicResultData =
   | MarginCalculationData
   | DemandEvidenceData
   | CompetitorAnalysisData
   | ValidationPlanData
   | PortfolioRankingData
-  | MineRiskScreeningData;
+  | MineRiskScreeningData
+  | GoldOpportunityAnalysisData;
 
 export interface AgentDeterministicResult {
   requestId: string;
@@ -124,6 +150,10 @@ const COMPETITOR_TOOL_ID = 'opportunity.competitor-comparison.v1';
 const VALIDATION_TOOL_ID = 'opportunity.validation-plan.v1';
 const PORTFOLIO_TOOL_ID = 'opportunity.portfolio-ranking.v1';
 const MINE_GUARD_TOOL_ID = 'centmine.mine-guard-screening.v1';
+const GOLD_ANALYST_TOOL_ID = 'centmine.gold-analyst-economic-screening.v1';
+const GOLD_ANALYST_AGENT_ID = '41';
+const GOLD_ANALYST_AGENT_NAME = 'ORE.REFINER';
+const MAX_GOLD_ANALYSIS_EUR = 50_000_000;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -235,6 +265,102 @@ export function runMarginCalculator(
     externalActionExecuted: false,
     data,
   };
+}
+
+const GOLD_ANALYSIS_FIELDS = [
+  'opportunityName',
+  'boampNoticeId',
+  'estimatedContractRevenueEur',
+  'estimatedDeliveryCostEur',
+  'estimatedBidPreparationCostEur',
+  'estimatedOtherFeesEur',
+  'riskReservePercent',
+];
+
+function parseGoldEur(value: unknown, field: string, allowZero: boolean): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > MAX_GOLD_ANALYSIS_EUR
+    || (!allowZero && value === 0)) {
+    throw new Error(`${field} doit être un montant ${allowZero ? 'positif ou nul' : 'strictement positif'} inférieur ou égal à ${MAX_GOLD_ANALYSIS_EUR} €.`);
+  }
+  const rounded = roundMoney(value);
+  if (!allowZero && rounded === 0) throw new Error(`${field} doit être d’au moins 0,01 €.`);
+  return rounded;
+}
+
+export function parseGoldOpportunityAnalysisInput(raw: string): GoldOpportunityAnalysisInput {
+  const parsed = parseExactJsonObject(raw, GOLD_ANALYSIS_FIELDS);
+  const opportunityName = parseBoundedText(parsed.opportunityName, 'opportunityName', 120);
+  const boampNoticeId = parseBoundedText(parsed.boampNoticeId, 'boampNoticeId', 50);
+  buildBoampNoticeUrl(boampNoticeId);
+  if (typeof parsed.riskReservePercent !== 'number' || !Number.isFinite(parsed.riskReservePercent)
+    || parsed.riskReservePercent < 0 || parsed.riskReservePercent > 100) {
+    throw new Error('riskReservePercent doit être compris entre 0 et 100.');
+  }
+  return {
+    opportunityName,
+    boampNoticeId,
+    estimatedContractRevenueEur: parseGoldEur(parsed.estimatedContractRevenueEur, 'estimatedContractRevenueEur', false),
+    estimatedDeliveryCostEur: parseGoldEur(parsed.estimatedDeliveryCostEur, 'estimatedDeliveryCostEur', true),
+    estimatedBidPreparationCostEur: parseGoldEur(parsed.estimatedBidPreparationCostEur, 'estimatedBidPreparationCostEur', true),
+    estimatedOtherFeesEur: parseGoldEur(parsed.estimatedOtherFeesEur, 'estimatedOtherFeesEur', true),
+    riskReservePercent: Number(parsed.riskReservePercent.toFixed(2)),
+  };
+}
+
+function calculateGoldOpportunityScenario(input: GoldOpportunityAnalysisInput): GoldOpportunityAnalysisData {
+  const riskReserveEur = roundMoney(input.estimatedContractRevenueEur * input.riskReservePercent / 100);
+  const totalEstimatedCostEur = roundMoney(input.estimatedDeliveryCostEur
+    + input.estimatedBidPreparationCostEur
+    + input.estimatedOtherFeesEur
+    + riskReserveEur);
+  const projectedOperatingResultEur = roundMoney(input.estimatedContractRevenueEur - totalEstimatedCostEur);
+  const projectedMarginPercent = roundMoney(projectedOperatingResultEur / input.estimatedContractRevenueEur * 100);
+  const warnings = [
+    'La valeur du marché et les coûts sont des estimations saisies; ils n’ont pas été extraits ni vérifiés dans l’avis BOAMP.',
+    'L’avis BOAMP est lié par son identifiant, mais son contenu, son échéance et l’admissibilité du candidat ne sont pas revérifiés par cet outil.',
+    'Le résultat projeté ne prouve ni attribution, ni commande, ni encaissement; le revenu confirmé reste à zéro.',
+  ];
+  if (projectedOperatingResultEur < 0) {
+    warnings.push('Le scénario produit une perte estimée selon les montants fournis; revoir les hypothèses avant toute décision.');
+  }
+  return {
+    dataKind: 'GOLD_OPPORTUNITY_ANALYSIS',
+    ...input,
+    sourceUrl: buildBoampNoticeUrl(input.boampNoticeId),
+    sourceVerificationState: 'NOTICE_LINK_NOT_RECHECKED',
+    riskReserveEur,
+    totalEstimatedCostEur,
+    projectedOperatingResultEur,
+    projectedMarginPercent,
+    breakEvenContractValueEur: totalEstimatedCostEur,
+    revenueKind: 'USER_ESTIMATED_TENDER_VALUE',
+    confirmedRevenueEur: 0,
+    warnings,
+  };
+}
+
+export function runGoldOpportunityAnalysis(
+  agent: AgentRecord,
+  taskId: string,
+  mission: string,
+  now = new Date().toISOString(),
+): AgentDeterministicResult {
+  if (agent.id !== GOLD_ANALYST_AGENT_ID || agent.name !== GOLD_ANALYST_AGENT_NAME
+    || !authorizeAgentCapability(agent, 'LOCAL_GOLD_OPPORTUNITY_ANALYSIS')) {
+    throw new Error('Permission refusée : ce profil n’est pas autorisé à analyser ce scénario économique.');
+  }
+  const input = parseGoldOpportunityAnalysisInput(mission);
+  const data = calculateGoldOpportunityScenario(input);
+  const output = [
+    `Dossier : ${data.opportunityName} · avis BOAMP ${data.boampNoticeId}`,
+    `Valeur contractuelle estimée saisie : ${formatEur(data.estimatedContractRevenueEur)}`,
+    `Coûts estimés totaux, réserve incluse : ${formatEur(data.totalEstimatedCostEur)} (réserve ${data.riskReservePercent.toFixed(2)} % = ${formatEur(data.riskReserveEur)})`,
+    `Résultat opérationnel projeté : ${formatEur(data.projectedOperatingResultEur)} (${data.projectedMarginPercent.toFixed(2)} %)`,
+    `Seuil estimé de valeur contractuelle : ${formatEur(data.breakEvenContractValueEur)}`,
+    'Calcul déterministe de scénario; l’avis source n’a pas été revérifié et aucun revenu n’est confirmé ou encaissé.',
+    ...data.warnings.map(warning => `Limite : ${warning}`),
+  ].join('\n');
+  return createResult(agent, taskId, GOLD_ANALYST_TOOL_ID, output, data, now);
 }
 
 function parseExactJsonObject(raw: string, fields: string[]): Record<string, unknown> {
@@ -750,6 +876,41 @@ function isMineRiskScreeningData(value: unknown): value is MineRiskScreeningData
     && value.platformActionExecuted === false && value.financialActionExecuted === false;
 }
 
+function isGoldOpportunityAnalysisData(value: unknown): value is GoldOpportunityAnalysisData {
+  if (!isPlainObject(value) || value.dataKind !== 'GOLD_OPPORTUNITY_ANALYSIS'
+    || value.sourceVerificationState !== 'NOTICE_LINK_NOT_RECHECKED'
+    || value.revenueKind !== 'USER_ESTIMATED_TENDER_VALUE' || value.confirmedRevenueEur !== 0) return false;
+  if (!isString(value.opportunityName) || value.opportunityName.length < 1 || value.opportunityName.length > 120
+    || !isString(value.boampNoticeId) || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,49}$/.test(value.boampNoticeId)) return false;
+  const expectedSourceUrl = buildBoampNoticeUrl(value.boampNoticeId);
+  const monetaryInputs = [
+    value.estimatedContractRevenueEur,
+    value.estimatedDeliveryCostEur,
+    value.estimatedBidPreparationCostEur,
+    value.estimatedOtherFeesEur,
+  ];
+  if (!monetaryInputs.every(item => isFiniteNumber(item) && item >= 0 && item <= MAX_GOLD_ANALYSIS_EUR)
+    || !isFiniteNumber(value.estimatedContractRevenueEur) || value.estimatedContractRevenueEur <= 0
+    || !isFiniteNumber(value.riskReservePercent) || value.riskReservePercent < 0 || value.riskReservePercent > 100
+    || !isFiniteNumber(value.riskReserveEur) || !isFiniteNumber(value.totalEstimatedCostEur)
+    || !isFiniteNumber(value.projectedOperatingResultEur) || !isFiniteNumber(value.projectedMarginPercent)
+    || !isFiniteNumber(value.breakEvenContractValueEur)) return false;
+  const expectedReserve = roundMoney(value.estimatedContractRevenueEur * value.riskReservePercent / 100);
+  const deliveryCost = value.estimatedDeliveryCostEur as number;
+  const bidPreparationCost = value.estimatedBidPreparationCostEur as number;
+  const otherFees = value.estimatedOtherFeesEur as number;
+  const expectedTotalCost = roundMoney(deliveryCost + bidPreparationCost + otherFees + expectedReserve);
+  const expectedResult = roundMoney(value.estimatedContractRevenueEur - expectedTotalCost);
+  const expectedMargin = roundMoney(expectedResult / value.estimatedContractRevenueEur * 100);
+  return value.sourceUrl === expectedSourceUrl
+    && value.riskReserveEur === expectedReserve
+    && value.totalEstimatedCostEur === expectedTotalCost
+    && value.projectedOperatingResultEur === expectedResult
+    && value.projectedMarginPercent === expectedMargin
+    && value.breakEvenContractValueEur === expectedTotalCost
+    && Array.isArray(value.warnings) && value.warnings.length >= 3 && value.warnings.every(isString);
+}
+
 function isMarginCalculationData(value: unknown): value is MarginCalculationData {
   if (!isPlainObject(value)) return false;
   return [
@@ -779,6 +940,7 @@ export function isAgentDeterministicResultData(toolId: string, value: unknown): 
     case VALIDATION_TOOL_ID: return isValidationPlanData(value);
     case PORTFOLIO_TOOL_ID: return isPortfolioRankingData(value);
     case MINE_GUARD_TOOL_ID: return isMineRiskScreeningData(value);
+    case GOLD_ANALYST_TOOL_ID: return isGoldOpportunityAnalysisData(value);
     default: return false;
   }
 }

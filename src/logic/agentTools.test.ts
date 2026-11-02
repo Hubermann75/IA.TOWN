@@ -3,6 +3,8 @@ import test from 'node:test';
 import { AGENT_REGISTRY } from '../data/agentRegistry';
 import {
   calculateMarginScenario,
+  parseGoldOpportunityAnalysisInput,
+  runGoldOpportunityAnalysis,
   parseMarginCalculationInput,
   runCompetitorComparison,
   runDemandEvidenceAnalyzer,
@@ -103,6 +105,37 @@ test('CENTMINE Prospector pilot is bound to the historical profile and a read-on
   assert.equal(authorizeAgentCapability(prospector, 'REMOTE_PUBLIC_TENDER_SEARCH'), true);
   assert.equal(authorizeAgentCapability({ ...prospector, name: 'FORGED.PROFILE' }, 'REMOTE_PUBLIC_TENDER_SEARCH'), false);
   assert.equal(tool.sideEffects, false);
+});
+
+test('Gold Analyst calculates a bounded BOAMP tender scenario from user estimates only', () => {
+  const agent = AGENT_REGISTRY.find(candidate => candidate.id === '41')!;
+  const input = {
+    opportunityName: 'Mission de création de service numérique',
+    boampNoticeId: '26-12345',
+    estimatedContractRevenueEur: 25_000,
+    estimatedDeliveryCostEur: 12_000,
+    estimatedBidPreparationCostEur: 600,
+    estimatedOtherFeesEur: 400,
+    riskReservePercent: 10,
+  };
+  assert.deepEqual(parseGoldOpportunityAnalysisInput(JSON.stringify(input)), input);
+  const result = runGoldOpportunityAnalysis(agent, 'gold-1', JSON.stringify(input), '2026-11-02T12:00:00.000Z');
+  assert.equal(result.toolId, 'centmine.gold-analyst-economic-screening.v1');
+  assert.equal(result.data.dataKind, 'GOLD_OPPORTUNITY_ANALYSIS');
+  assert.equal(result.data.sourceVerificationState, 'NOTICE_LINK_NOT_RECHECKED');
+  assert.equal(result.data.sourceUrl, 'https://www.boamp.fr/pages/avis/?q=idweb%3A26-12345');
+  assert.equal(result.data.riskReserveEur, 2_500);
+  assert.equal(result.data.totalEstimatedCostEur, 15_500);
+  assert.equal(result.data.projectedOperatingResultEur, 9_500);
+  assert.equal(result.data.projectedMarginPercent, 38);
+  assert.equal(result.data.breakEvenContractValueEur, 15_500);
+  assert.equal(result.data.confirmedRevenueEur, 0);
+  assert.equal(result.externalActionExecuted, false);
+  assert.match(result.output, /aucun revenu n’est confirmé ou encaissé/);
+  assert.throws(() => parseGoldOpportunityAnalysisInput(JSON.stringify({ ...input, otherUrl: 'https://attacker.example/' })));
+  assert.throws(() => parseGoldOpportunityAnalysisInput(JSON.stringify({ ...input, boampNoticeId: 'https://127.0.0.1' })));
+  assert.throws(() => parseGoldOpportunityAnalysisInput(JSON.stringify({ ...input, estimatedContractRevenueEur: 0 })));
+  assert.throws(() => runGoldOpportunityAnalysis({ ...agent, name: 'FORGED.PROFILE' }, 'gold-forged', JSON.stringify(input)));
 });
 
 test('demand evidence tool preserves provenance and never claims live verification', () => {

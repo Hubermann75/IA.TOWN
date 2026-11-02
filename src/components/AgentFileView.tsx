@@ -265,10 +265,10 @@ export const AgentFileView: React.FC = () => {
 
   const missionRuntimeMessage = selectedAgentExecutionMode === 'REMOTE_READ_ONLY'
     ? 'PROSPECTOR peut lancer une recherche BOAMP en lecture seule depuis le serveur IA TOWN. L’envoi des mots-clés et l’accès Internet ont lieu au lancement; seuls des avis publics ouverts avec échéance ISO interprétable sont retenus. L’accès à l’API est annoncé gratuit, les coûts d’hébergement/réseau ne sont pas mesurés. Le résultat n’est ni une validation juridique ni une promesse de revenu.'
+    : selectedAgentExecutionMode === 'DETERMINISTIC'
+      ? `Outil déterministe local disponible : ${selectedAgentTools[0]?.name ?? 'outil autorisé'}. Le résultat est calculé à partir des données de mission; aucun paiement, dépôt de candidature ou revenu confirmé n’est produit.`
     : selectedAgent.type === 'TYPE_B_SERVICE'
-    ? selectedAgentExecutionMode === 'DETERMINISTIC'
-      ? 'Calculateur local disponible. Utilisez le JSON indiqué; le résultat reste une projection et ne modifie aucun registre financier.'
-      : 'Aucun exécuteur déterministe n’est branché. Vous pouvez conserver la mission en file; elle ne sera pas exécutée.'
+    ? 'Aucun exécuteur déterministe n’est branché. Vous pouvez conserver la mission en file; elle ne sera pas exécutée.'
     : runtimeCheckFailed
       ? 'Serveur IA inaccessible dans ce mode de lancement.'
       : !runtimeStatus
@@ -531,7 +531,7 @@ export const AgentFileView: React.FC = () => {
                   {selectedAgentVisualState === 'INACTIVE' ? 'INACTIF' : selectedAgentVisualState === 'QUEUED' ? 'EN FILE' : selectedAgentVisualState === 'WORKING' ? 'TRAVAIL' : selectedAgentVisualState === 'WAITING_REVIEW' ? 'ATTENTE DE REVUE' : 'ERREUR'}
                 </span>
               </div>
-              <div className={`rounded-lg border px-3 py-2 text-[11px] font-mono-code ${selectedAgentExecutionMode === 'REMOTE_READ_ONLY' ? 'border-cyan-800 bg-cyan-950/30 text-cyan-200' : runtimeStatus?.available && selectedAgent.type !== 'TYPE_B_SERVICE' ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300' : 'border-amber-800 bg-amber-950/20 text-amber-300'}`}>
+              <div className={`rounded-lg border px-3 py-2 text-[11px] font-mono-code ${selectedAgentExecutionMode === 'REMOTE_READ_ONLY' || selectedAgentExecutionMode === 'DETERMINISTIC' ? 'border-cyan-800 bg-cyan-950/30 text-cyan-200' : runtimeStatus?.available && selectedAgent.type !== 'TYPE_B_SERVICE' ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300' : 'border-amber-800 bg-amber-950/20 text-amber-300'}`}>
                 {missionRuntimeMessage}
               </div>
               <div className="flex gap-2">
@@ -544,7 +544,7 @@ export const AgentFileView: React.FC = () => {
                   placeholder={selectedAgentExecutionMode === 'REMOTE_READ_ONLY'
                     ? '{"keywords":"développement application web"}'
                     : selectedAgentExecutionMode === 'DETERMINISTIC'
-                    ? '{"unitPriceEur":29,"variableCostPerUnitEur":4.75,"fixedCostsEur":100,"plannedUnits":10}'
+                    ? `Saisir le JSON attendu par : ${selectedAgentTools[0]?.name ?? 'l’outil local autorisé'}`
                     : `Décrire une mission pour ${selectedAgent.name}...`}
                   className="flex-1 resize-y bg-[#0A0F1E] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 font-inter focus:outline-none focus:border-cyan-400"
                 />
@@ -651,6 +651,9 @@ export const AgentFileView: React.FC = () => {
                           <>
                             <p className="mt-2 text-[9px] text-slate-500">Outil local : {task.result.toolId} · données de la mission</p>
                             <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{task.result.output}</p>
+                            {task.result.data.dataKind === 'GOLD_OPPORTUNITY_ANALYSIS' && (
+                              <a href={task.result.data.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-[10px] text-cyan-300 underline">Ouvrir l’avis BOAMP associé</a>
+                            )}
                             <p className="mt-2 text-[10px] font-mono-code text-amber-300">
                               Résultat local issu des données fournies. Aucune recherche web, publication, dépense, vente ni écriture bancaire n’a été exécutée.
                             </p>

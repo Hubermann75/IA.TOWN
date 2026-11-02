@@ -47,7 +47,7 @@ export interface AgentRuntimeDefinition {
   toolsAvailable: Array<{ name: string; connected: boolean; toolId?: string }>;
   permissions: { declared: string[]; enforced: string[] };
   model?: { provider: 'gemini'; mode: 'PROPOSAL_ONLY' };
-  acceptedMissions: Array<'TEXT_PROPOSAL' | 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH'>;
+  acceptedMissions: Array<'TEXT_PROPOSAL' | 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH' | 'GOLD_OPPORTUNITY_ANALYSIS'>;
   dependencies: string[];
   dependenciesVerified: false;
   budgetMaxEur: number | null;

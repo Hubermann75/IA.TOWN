@@ -2,6 +2,7 @@ import type { AgentRecord } from '../types/town';
 import {
   runCompetitorComparison,
   runDemandEvidenceAnalyzer,
+  runGoldOpportunityAnalysis,
   runMarginCalculator,
   runMineGuardScreening,
   runPortfolioRanking,
@@ -18,7 +19,7 @@ export interface AgentToolDefinition {
   allowedAgentId: string;
   allowedAgentName: string;
   requiredCapability: AgentCapability;
-  missionType: 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH';
+  missionType: 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING' | 'PUBLIC_OPPORTUNITY_SEARCH' | 'GOLD_OPPORTUNITY_ANALYSIS';
   executionMode: 'DETERMINISTIC' | 'REMOTE_READ_ONLY';
   exampleMission: string;
   associatedTest: string;
@@ -131,6 +132,21 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     associatedTest: 'boampProspector.test.ts::public BOAMP search returns bounded, provenance-preserving open notices only',
     sideEffects: false,
     costEur: 0,
+  },
+  {
+    id: 'centmine.gold-analyst-economic-screening.v1',
+    name: 'Analyse économique locale d’un avis BOAMP',
+    targetV6Role: { id: '15', name: 'GOLD ANALYST', building: 'AI.DEPTH.CENTMINE' },
+    allowedAgentId: '41',
+    allowedAgentName: 'ORE.REFINER',
+    requiredCapability: 'LOCAL_GOLD_OPPORTUNITY_ANALYSIS',
+    missionType: 'GOLD_OPPORTUNITY_ANALYSIS',
+    executionMode: 'DETERMINISTIC',
+    exampleMission: JSON.stringify({ opportunityName: 'EXEMPLE — remplacer par un avis pertinent', boampNoticeId: '26-000000', estimatedContractRevenueEur: 25000, estimatedDeliveryCostEur: 12000, estimatedBidPreparationCostEur: 600, estimatedOtherFeesEur: 400, riskReservePercent: 10 }, null, 2),
+    associatedTest: 'agentTools.test.ts::Gold Analyst calculates only from supplied estimates and keeps confirmed revenue at zero',
+    sideEffects: false,
+    costEur: 0,
+    execute: runGoldOpportunityAnalysis,
   },
 ];
 
