@@ -28,7 +28,8 @@ export function validateAgentRuntimeRegistry(): { valid: boolean; issues: string
     issues.push('Un outil est marqué connecté sans définition dans le registre des outils.');
   }
   if (AGENT_RUNTIME_REGISTRY.some(agent => agent.permissions.enforced.some(capability =>
-    !AGENT_TOOL_REGISTRY.some(tool => tool.allowedAgentName === agent.name && tool.requiredCapability === capability),
+    !AGENT_TOOL_REGISTRY.some(tool => tool.allowedAgentId === agent.id
+      && tool.allowedAgentName === agent.name && tool.requiredCapability === capability),
   ))) {
     issues.push('Une permission est appliquée sans outil et grant correspondants.');
   }

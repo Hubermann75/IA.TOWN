@@ -9,6 +9,7 @@ export interface MarginCalculationInput {
 }
 
 export interface MarginCalculationData {
+  dataKind?: 'MARGIN_CALCULATION';
   unitPriceEur: number;
   variableCostPerUnitEur: number;
   fixedCostsEur: number;
@@ -25,6 +26,62 @@ export interface MarginCalculationData {
   warnings: string[];
 }
 
+export interface DemandEvidenceData {
+  dataKind: 'DEMAND_EVIDENCE';
+  verificationState: 'USER_SUPPLIED_NOT_VERIFIED';
+  sourceCount: number;
+  averageUserSignalStrength: number;
+  evidence: Array<{ sourceName: string; url: string; observedAt: string; signal: string; userRatedStrength: number }>;
+}
+
+export interface CompetitorAnalysisData {
+  dataKind: 'COMPETITOR_COMPARISON';
+  verificationState: 'USER_SUPPLIED_NOT_VERIFIED';
+  competitorCount: number;
+  competitors: Array<{ name: string; sourceUrl: string; observedAt: string; priceEur: number | null; listedFeatures: string[] }>;
+  featureCoverage: Array<{ feature: string; competitorsListingCount: number }>;
+  potentialListingGaps: string[];
+  priceRangeEur: { min: number; max: number } | null;
+}
+
+export interface ValidationPlanData {
+  dataKind: 'VALIDATION_PLAN';
+  executionState: 'PLAN_ONLY_NOT_EXECUTED';
+  hypothesis: string;
+  targetAudience: string;
+  method: 'INTERVIEWS' | 'LANDING_PAGE' | 'PROTOTYPE';
+  maxBudgetEur: number;
+  timeboxDays: number;
+  minimumResponses: number;
+  steps: string[];
+  stopConditions: string[];
+}
+
+export interface PortfolioRankingData {
+  dataKind: 'PORTFOLIO_RANKING';
+  verificationState: 'USER_SUPPLIED_NOT_VERIFIED';
+  scoreFormula: string;
+  confirmedRevenueEur: 0;
+  ranking: Array<{
+    rank: number;
+    id: string;
+    name: string;
+    priorityScore: number;
+    evidencePoints: number;
+    readinessPoints: number;
+    economicsPoints: number;
+    riskPenalty: number;
+    projectedOperatingResultEur: number;
+  }>;
+}
+
+export type AgentDeterministicResultData =
+  | MarginCalculationData
+  | DemandEvidenceData
+  | CompetitorAnalysisData
+  | ValidationPlanData
+  | PortfolioRankingData;
+
 export interface AgentDeterministicResult {
   requestId: string;
   agentId: string;
@@ -35,7 +92,7 @@ export interface AgentDeterministicResult {
   output: string;
   resultKind: 'DETERMINISTIC_RESULT';
   externalActionExecuted: false;
-  data: MarginCalculationData;
+  data: AgentDeterministicResultData;
 }
 
 const MAX_EUR = 1_000_000;
@@ -46,6 +103,10 @@ const INPUT_KEYS = new Set([
   'fixedCostsEur',
   'plannedUnits',
 ]);
+const DEMAND_TOOL_ID = 'opportunity.demand-evidence.v1';
+const COMPETITOR_TOOL_ID = 'opportunity.competitor-comparison.v1';
+const VALIDATION_TOOL_ID = 'opportunity.validation-plan.v1';
+const PORTFOLIO_TOOL_ID = 'opportunity.portfolio-ranking.v1';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -106,6 +167,7 @@ export function calculateMarginScenario(input: MarginCalculationInput): MarginCa
   if (projectedOperatingResultEur < 0) warnings.push('Le scénario produit un résultat négatif avec les hypothèses saisies.');
 
   return {
+    dataKind: 'MARGIN_CALCULATION',
     ...input,
     contributionPerUnitEur,
     breakEvenUnits: contributionPerUnitEur > 0 ? Math.ceil(input.fixedCostsEur / contributionPerUnitEur) : null,
@@ -156,4 +218,444 @@ export function runMarginCalculator(
     externalActionExecuted: false,
     data,
   };
+}
+
+function parseExactJsonObject(raw: string, fields: string[]): Record<string, unknown> {
+  if (raw.length > 2_000) throw new Error('La mission JSON dépasse la limite de 2 000 caractères.');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('Entrée invalide : fournissez un objet JSON conforme au modèle de cet outil.');
+  }
+  if (!isPlainObject(parsed)) throw new Error('L’entrée doit être un objet JSON.');
+  if (Object.keys(parsed).length !== fields.length || Object.keys(parsed).some(key => !fields.includes(key))) {
+    throw new Error(`L’objet doit contenir uniquement ces champs : ${fields.join(', ')}.`);
+  }
+  return parsed;
+}
+
+function parseBoundedText(value: unknown, field: string, maxLength: number): string {
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > maxLength || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value)) {
+    throw new Error(`${field} doit être un texte de 1 à ${maxLength} caractères.`);
+  }
+  return value.trim();
+}
+
+function parsePublicSourceUrl(value: unknown, field: string): string {
+  const raw = parseBoundedText(value, field, 500);
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error(`${field} doit être une URL HTTP(S) valide.`);
+  }
+  const host = parsed.hostname.toLowerCase();
+  const isPrivateIpv4 = /^(10\.|127\.|192\.168\.|169\.254\.)/.test(host)
+    || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  if (!['http:', 'https:'].includes(parsed.protocol)
+    || parsed.username || parsed.password
+    || host === 'localhost' || host.endsWith('.local') || isPrivateIpv4 || host === '::1') {
+    throw new Error(`${field} doit être une source web publique sans identifiant intégré.`);
+  }
+  return parsed.toString();
+}
+
+function parseObservedAt(value: unknown, field: string): string {
+  const timestamp = parseBoundedText(value, field, 40);
+  if (!Number.isFinite(Date.parse(timestamp))) throw new Error(`${field} doit contenir une date vérifiable.`);
+  return timestamp;
+}
+
+function parseInteger(value: unknown, field: string, min: number, max: number): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < min || value > max) {
+    throw new Error(`${field} doit être un entier entre ${min} et ${max}.`);
+  }
+  return value;
+}
+
+function assertAuthorizedRole(agent: AgentRecord, id: string, name: string, capability: Parameters<typeof authorizeAgentCapability>[1]): void {
+  if (agent.id !== id || agent.name !== name || !authorizeAgentCapability(agent, capability)) {
+    throw new Error('Permission refusée : ce profil ne possède pas le grant local requis.');
+  }
+}
+
+function createResult(
+  agent: AgentRecord,
+  taskId: string,
+  toolId: string,
+  output: string,
+  data: AgentDeterministicResultData,
+  now: string,
+): AgentDeterministicResult {
+  if (!Number.isFinite(Date.parse(now))) throw new Error('Horodatage de résultat invalide.');
+  if (!output.trim() || output.length > 12_000) throw new Error('Le résultat est vide ou trop volumineux.');
+  return {
+    requestId: `local-${taskId}`,
+    agentId: agent.id,
+    agentName: agent.name,
+    toolId,
+    createdAt: now,
+    durationMs: 0,
+    output,
+    resultKind: 'DETERMINISTIC_RESULT',
+    externalActionExecuted: false,
+    data,
+  };
+}
+
+export function runDemandEvidenceAnalyzer(
+  agent: AgentRecord,
+  taskId: string,
+  mission: string,
+  now = new Date().toISOString(),
+): AgentDeterministicResult {
+  assertAuthorizedRole(agent, '71', 'SCOUT.AI', 'LOCAL_DEMAND_EVIDENCE_ANALYSIS');
+  const input = parseExactJsonObject(mission, ['sources']);
+  if (!Array.isArray(input.sources) || input.sources.length < 1 || input.sources.length > 10) {
+    throw new Error('sources doit contenir entre 1 et 10 éléments.');
+  }
+  const evidence = input.sources.map((value, index) => {
+    if (!isPlainObject(value) || Object.keys(value).length !== 5
+      || Object.keys(value).some(key => !['sourceName', 'url', 'observedAt', 'signal', 'strength'].includes(key))) {
+      throw new Error(`sources[${index}] doit contenir sourceName, url, observedAt, signal et strength.`);
+    }
+    return {
+      sourceName: parseBoundedText(value.sourceName, `sources[${index}].sourceName`, 100),
+      url: parsePublicSourceUrl(value.url, `sources[${index}].url`),
+      observedAt: parseObservedAt(value.observedAt, `sources[${index}].observedAt`),
+      signal: parseBoundedText(value.signal, `sources[${index}].signal`, 240),
+      userRatedStrength: parseInteger(value.strength, `sources[${index}].strength`, 1, 5),
+    };
+  });
+  const averageUserSignalStrength = Number((evidence.reduce((sum, item) => sum + item.userRatedStrength, 0) / evidence.length).toFixed(2));
+  const data: DemandEvidenceData = {
+    dataKind: 'DEMAND_EVIDENCE',
+    verificationState: 'USER_SUPPLIED_NOT_VERIFIED',
+    sourceCount: evidence.length,
+    averageUserSignalStrength,
+    evidence,
+  };
+  const output = [
+    `Dossier structuré : ${evidence.length} signal(aux) fourni(s).`,
+    `Force moyenne attribuée par la personne : ${averageUserSignalStrength.toFixed(2)}/5.`,
+    ...evidence.map((item, index) => `${index + 1}. ${item.sourceName} (${item.observedAt}) — ${item.signal} [force saisie ${item.userRatedStrength}/5] — ${item.url}`),
+    'Les sources et signaux sont fournis par l’utilisateur et n’ont pas été vérifiés en ligne.',
+  ].join('\n');
+  return createResult(agent, taskId, DEMAND_TOOL_ID, output, data, now);
+}
+
+export function runCompetitorComparison(
+  agent: AgentRecord,
+  taskId: string,
+  mission: string,
+  now = new Date().toISOString(),
+): AgentDeterministicResult {
+  assertAuthorizedRole(agent, '75', 'NICHE.DRILLER', 'LOCAL_COMPETITOR_DATA_ANALYSIS');
+  const input = parseExactJsonObject(mission, ['competitors']);
+  if (!Array.isArray(input.competitors) || input.competitors.length < 1 || input.competitors.length > 10) {
+    throw new Error('competitors doit contenir entre 1 et 10 éléments.');
+  }
+  const competitors = input.competitors.map((value, index) => {
+    if (!isPlainObject(value) || Object.keys(value).length !== 5
+      || Object.keys(value).some(key => !['name', 'sourceUrl', 'observedAt', 'priceEur', 'features'].includes(key))) {
+      throw new Error(`competitors[${index}] doit contenir name, sourceUrl, observedAt, priceEur et features.`);
+    }
+    if (!Array.isArray(value.features) || value.features.length > 12) {
+      throw new Error(`competitors[${index}].features doit contenir au plus 12 éléments.`);
+    }
+    const features = value.features.map((feature, featureIndex) =>
+      parseBoundedText(feature, `competitors[${index}].features[${featureIndex}]`, 80),
+    );
+    if (new Set(features.map(feature => feature.toLocaleLowerCase('fr-FR'))).size !== features.length) {
+      throw new Error(`competitors[${index}].features contient un doublon.`);
+    }
+    const priceEur = value.priceEur === null
+      ? null
+      : parseNonNegativeEur(value.priceEur, `competitors[${index}].priceEur`, true);
+    return {
+      name: parseBoundedText(value.name, `competitors[${index}].name`, 100),
+      sourceUrl: parsePublicSourceUrl(value.sourceUrl, `competitors[${index}].sourceUrl`),
+      observedAt: parseObservedAt(value.observedAt, `competitors[${index}].observedAt`),
+      priceEur,
+      listedFeatures: features,
+    };
+  });
+  if (new Set(competitors.map(item => item.name.toLocaleLowerCase('fr-FR'))).size !== competitors.length) {
+    throw new Error('Les noms des concurrents doivent être uniques.');
+  }
+  const featureNames = [...new Set(competitors.flatMap(item => item.listedFeatures))]
+    .sort((left, right) => left.localeCompare(right, 'fr-FR'));
+  const featureCoverage = featureNames.map(feature => ({
+    feature,
+    competitorsListingCount: competitors.filter(item => item.listedFeatures.some(candidate => candidate.toLocaleLowerCase('fr-FR') === feature.toLocaleLowerCase('fr-FR'))).length,
+  }));
+  const potentialListingGaps = featureCoverage
+    .filter(item => item.competitorsListingCount < competitors.length)
+    .map(item => item.feature);
+  const prices = competitors.flatMap(item => item.priceEur === null ? [] : [item.priceEur]);
+  const data: CompetitorAnalysisData = {
+    dataKind: 'COMPETITOR_COMPARISON',
+    verificationState: 'USER_SUPPLIED_NOT_VERIFIED',
+    competitorCount: competitors.length,
+    competitors,
+    featureCoverage,
+    potentialListingGaps,
+    priceRangeEur: prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : null,
+  };
+  const output = [
+    `Comparaison structurée de ${competitors.length} concurrent(s), sur les données saisies.`,
+    ...featureCoverage.map(item => `• ${item.feature} : mentionné chez ${item.competitorsListingCount}/${competitors.length}`),
+    potentialListingGaps.length
+      ? `Éléments potentiellement absents des fiches fournies : ${potentialListingGaps.join(', ')}. À vérifier; une absence de mention ne prouve pas une absence de fonction.`
+      : 'Aucun écart de mention n’a été trouvé dans les listes fournies.',
+    data.priceRangeEur ? `Fourchette de prix saisie : ${formatEur(data.priceRangeEur.min)} à ${formatEur(data.priceRangeEur.max)}.` : 'Aucun prix comparable fourni.',
+    'Les sources et informations concurrentielles n’ont pas été vérifiées en ligne.',
+  ].join('\n');
+  return createResult(agent, taskId, COMPETITOR_TOOL_ID, output, data, now);
+}
+
+export function runValidationPlan(
+  agent: AgentRecord,
+  taskId: string,
+  mission: string,
+  now = new Date().toISOString(),
+): AgentDeterministicResult {
+  assertAuthorizedRole(agent, '76', 'PROTOTYPE.TRIGGER', 'LOCAL_VALIDATION_PLANNING');
+  const input = parseExactJsonObject(mission, ['hypothesis', 'targetAudience', 'method', 'maxBudgetEur', 'timeboxDays', 'minimumResponses']);
+  if (!['INTERVIEWS', 'LANDING_PAGE', 'PROTOTYPE'].includes(String(input.method))) {
+    throw new Error('method doit être INTERVIEWS, LANDING_PAGE ou PROTOTYPE.');
+  }
+  const data: ValidationPlanData = {
+    dataKind: 'VALIDATION_PLAN',
+    executionState: 'PLAN_ONLY_NOT_EXECUTED',
+    hypothesis: parseBoundedText(input.hypothesis, 'hypothesis', 300),
+    targetAudience: parseBoundedText(input.targetAudience, 'targetAudience', 200),
+    method: input.method as ValidationPlanData['method'],
+    maxBudgetEur: parseNonNegativeEur(input.maxBudgetEur, 'maxBudgetEur', true),
+    timeboxDays: parseInteger(input.timeboxDays, 'timeboxDays', 1, 90),
+    minimumResponses: parseInteger(input.minimumResponses, 'minimumResponses', 1, 1_000),
+    steps: [],
+    stopConditions: [],
+  };
+  if (data.maxBudgetEur > 10_000) throw new Error('maxBudgetEur ne peut pas dépasser 10 000 €.');
+  const methodSteps: Record<ValidationPlanData['method'], string[]> = {
+    INTERVIEWS: [
+      `Définir un guide d’entretien neutre pour le public cible : ${data.targetAudience}.`,
+      `Recueillir au moins ${data.minimumResponses} réponses et noter les éléments observables sans les reformuler comme des achats.`,
+      'Classer les réponses par problème, fréquence et solution actuelle; conserver les verbatims avec leur provenance.',
+      'Comparer les observations à l’hypothèse et consigner les résultats avant toute décision de production.',
+    ],
+    LANDING_PAGE: [
+      `Rédiger une page décrivant l’hypothèse sans promesse non vérifiée pour ${data.targetAudience}.`,
+      `Définir à l’avance une mesure de réponse et un seuil minimum de ${data.minimumResponses}; aucune campagne n’est lancée par cet outil.`,
+      'Enregistrer les visites et réponses depuis une source de mesure choisie par l’utilisateur.',
+      'Comparer le résultat au seuil après la période d’observation et documenter les limites de l’échantillon.',
+    ],
+    PROTOTYPE: [
+      `Limiter le prototype à une seule fonction qui teste l’hypothèse auprès de ${data.targetAudience}.`,
+      'Définir les critères de réussite et d’échec avant le test, puis inviter des testeurs avec leur accord.',
+      `Recueillir au moins ${data.minimumResponses} retours et distinguer les avis des paiements confirmés.`,
+      'Documenter les défauts, coûts et retours observés avant de décider de poursuivre ou d’arrêter.',
+    ],
+  };
+  data.steps = methodSteps[data.method];
+  data.stopConditions = [
+    `Arrêter à la fin de ${data.timeboxDays} jour(s), au plafond budgétaire prévu (${formatEur(data.maxBudgetEur)}) ou si une règle de plateforme/droit n’est pas claire.`,
+    'Ne pas engager de dépense, publier de campagne, contacter de personne ni créer de compte sans autorisation distincte.',
+    'Si les réponses sont insuffisantes ou non traçables, classer le résultat comme non concluant.',
+  ];
+  const output = [
+    'Plan de validation seulement; aucun test, achat, campagne ou contact n’a été exécuté.',
+    `Hypothèse : ${data.hypothesis}`,
+    `Public cible : ${data.targetAudience} · méthode : ${data.method} · durée : ${data.timeboxDays} jour(s) · plafond prévu : ${formatEur(data.maxBudgetEur)} · réponses minimales : ${data.minimumResponses}.`,
+    'Étapes :', ...data.steps.map((step, index) => `${index + 1}. ${step}`),
+    'Conditions d’arrêt :', ...data.stopConditions.map(condition => `• ${condition}`),
+  ].join('\n');
+  return createResult(agent, taskId, VALIDATION_TOOL_ID, output, data, now);
+}
+
+interface PortfolioInput {
+  opportunities: Array<{
+    id: string;
+    name: string;
+    sourceCount: number;
+    deliveryReadinessPercent: number;
+    riskLevel: number;
+    unitPriceEur: number;
+    variableCostPerUnitEur: number;
+    fixedCostsEur: number;
+    plannedUnits: number;
+  }>;
+}
+
+export function runPortfolioRanking(
+  agent: AgentRecord,
+  taskId: string,
+  mission: string,
+  now = new Date().toISOString(),
+): AgentDeterministicResult {
+  assertAuthorizedRole(agent, '74', 'REVENUE.ENGINE', 'LOCAL_PORTFOLIO_RANKING');
+  const input = parseExactJsonObject(mission, ['opportunities']);
+  if (!Array.isArray(input.opportunities) || input.opportunities.length < 1 || input.opportunities.length > 10) {
+    throw new Error('opportunities doit contenir entre 1 et 10 éléments.');
+  }
+  const requiredFields = ['id', 'name', 'sourceCount', 'deliveryReadinessPercent', 'riskLevel', 'unitPriceEur', 'variableCostPerUnitEur', 'fixedCostsEur', 'plannedUnits'];
+  const parsed: PortfolioInput['opportunities'] = input.opportunities.map((value, index) => {
+    if (!isPlainObject(value) || Object.keys(value).length !== requiredFields.length
+      || Object.keys(value).some(key => !requiredFields.includes(key))) {
+      throw new Error(`opportunities[${index}] doit contenir uniquement : ${requiredFields.join(', ')}.`);
+    }
+    return {
+      id: parseBoundedText(value.id, `opportunities[${index}].id`, 40),
+      name: parseBoundedText(value.name, `opportunities[${index}].name`, 100),
+      sourceCount: parseInteger(value.sourceCount, `opportunities[${index}].sourceCount`, 0, 10_000),
+      deliveryReadinessPercent: parseInteger(value.deliveryReadinessPercent, `opportunities[${index}].deliveryReadinessPercent`, 0, 100),
+      riskLevel: parseInteger(value.riskLevel, `opportunities[${index}].riskLevel`, 1, 5),
+      unitPriceEur: parseNonNegativeEur(value.unitPriceEur, `opportunities[${index}].unitPriceEur`, false),
+      variableCostPerUnitEur: parseNonNegativeEur(value.variableCostPerUnitEur, `opportunities[${index}].variableCostPerUnitEur`, true),
+      fixedCostsEur: parseNonNegativeEur(value.fixedCostsEur, `opportunities[${index}].fixedCostsEur`, true),
+      plannedUnits: parseInteger(value.plannedUnits, `opportunities[${index}].plannedUnits`, 1, MAX_UNITS),
+    };
+  });
+  if (new Set(parsed.map(item => item.id)).size !== parsed.length) throw new Error('Les identifiants d’opportunité doivent être uniques.');
+
+  const scored = parsed.map(item => {
+    const scenario = calculateMarginScenario({
+      unitPriceEur: item.unitPriceEur,
+      variableCostPerUnitEur: item.variableCostPerUnitEur,
+      fixedCostsEur: item.fixedCostsEur,
+      plannedUnits: item.plannedUnits,
+    });
+    const evidencePoints = Math.min(item.sourceCount, 10) * 5;
+    const readinessPoints = Number((item.deliveryReadinessPercent * 0.3).toFixed(2));
+    const economicsPoints = Number(Math.max(0, Math.min(20, (scenario.projectedOperatingResultEur / Math.max(scenario.projectedTotalCostsEur, 1)) * 20)).toFixed(2));
+    const riskPenalty = item.riskLevel * 2;
+    const priorityScore = Number(Math.max(0, Math.min(100, evidencePoints + readinessPoints + economicsPoints - riskPenalty)).toFixed(2));
+    return { ...item, priorityScore, evidencePoints, readinessPoints, economicsPoints, riskPenalty, projectedOperatingResultEur: scenario.projectedOperatingResultEur };
+  }).sort((left, right) => right.priorityScore - left.priorityScore || left.id.localeCompare(right.id));
+
+  const data: PortfolioRankingData = {
+    dataKind: 'PORTFOLIO_RANKING',
+    verificationState: 'USER_SUPPLIED_NOT_VERIFIED',
+    scoreFormula: 'max(0,min(100,min(sourceCount,10)*5 + readinessPercent*0.3 + clamp(projectedOperatingResult/max(projectedCosts,1)*20,0,20) - riskLevel*2)); score de priorité, pas probabilité de succès.',
+    confirmedRevenueEur: 0,
+    ranking: scored.map((item, index) => ({
+      rank: index + 1,
+      id: item.id,
+      name: item.name,
+      priorityScore: item.priorityScore,
+      evidencePoints: item.evidencePoints,
+      readinessPoints: item.readinessPoints,
+      economicsPoints: item.economicsPoints,
+      riskPenalty: item.riskPenalty,
+      projectedOperatingResultEur: item.projectedOperatingResultEur,
+    })),
+  };
+  const output = [
+    'Classement de priorité à partir d’hypothèses saisies; les données et sources ne sont pas vérifiées.',
+    data.scoreFormula,
+    ...data.ranking.map(item => `${item.rank}. ${item.name} — indice ${item.priorityScore}/100; résultat opérationnel projeté ${formatEur(item.projectedOperatingResultEur)}.`),
+    'Revenu confirmé enregistré : 0 €. Aucune vente, dépense ou écriture bancaire n’a été réalisée.',
+  ].join('\n');
+  return createResult(agent, taskId, PORTFOLIO_TOOL_ID, output, data, now);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isDemandEvidenceData(value: unknown): value is DemandEvidenceData {
+  if (!isPlainObject(value) || value.dataKind !== 'DEMAND_EVIDENCE'
+    || value.verificationState !== 'USER_SUPPLIED_NOT_VERIFIED'
+    || !Number.isInteger(value.sourceCount) || !isFiniteNumber(value.averageUserSignalStrength)
+    || !Array.isArray(value.evidence) || value.evidence.length !== value.sourceCount) return false;
+  return value.evidence.every(item => isPlainObject(item)
+    && isString(item.sourceName) && item.sourceName.length > 0 && item.sourceName.length <= 100
+    && isString(item.url) && Number.isFinite(Date.parse(item.observedAt as string))
+    && isString(item.signal) && item.signal.length > 0 && item.signal.length <= 240
+    && Number.isInteger(item.userRatedStrength) && isFiniteNumber(item.userRatedStrength)
+    && item.userRatedStrength >= 1 && item.userRatedStrength <= 5);
+}
+
+function isCompetitorAnalysisData(value: unknown): value is CompetitorAnalysisData {
+  if (!isPlainObject(value) || value.dataKind !== 'COMPETITOR_COMPARISON'
+    || value.verificationState !== 'USER_SUPPLIED_NOT_VERIFIED'
+    || !isFiniteNumber(value.competitorCount) || !Number.isInteger(value.competitorCount) || !Array.isArray(value.competitors)
+    || value.competitors.length !== value.competitorCount || !Array.isArray(value.featureCoverage)
+    || !Array.isArray(value.potentialListingGaps)) return false;
+  const competitorCount = value.competitorCount as number;
+  const competitorsValid = value.competitors.every(item => isPlainObject(item)
+    && isString(item.name) && isString(item.sourceUrl)
+    && isString(item.observedAt) && Number.isFinite(Date.parse(item.observedAt))
+    && (item.priceEur === null || isFiniteNumber(item.priceEur))
+    && Array.isArray(item.listedFeatures) && item.listedFeatures.every(isString));
+  const coverageValid = value.featureCoverage.every(item => isPlainObject(item)
+    && isString(item.feature) && Number.isInteger(item.competitorsListingCount)
+    && isFiniteNumber(item.competitorsListingCount) && item.competitorsListingCount >= 0
+    && item.competitorsListingCount <= competitorCount);
+  const gapsValid = value.potentialListingGaps.every(isString);
+  const price = value.priceRangeEur;
+  const priceValid = price === null || (isPlainObject(price) && isFiniteNumber(price.min)
+    && isFiniteNumber(price.max) && price.min >= 0 && price.max >= price.min);
+  return competitorsValid && coverageValid && gapsValid && priceValid;
+}
+
+function isValidationPlanData(value: unknown): value is ValidationPlanData {
+  return isPlainObject(value) && value.dataKind === 'VALIDATION_PLAN'
+    && value.executionState === 'PLAN_ONLY_NOT_EXECUTED'
+    && isString(value.hypothesis) && isString(value.targetAudience)
+    && ['INTERVIEWS', 'LANDING_PAGE', 'PROTOTYPE'].includes(String(value.method))
+    && isFiniteNumber(value.maxBudgetEur) && value.maxBudgetEur >= 0 && value.maxBudgetEur <= 10_000
+    && Number.isInteger(value.timeboxDays) && isFiniteNumber(value.timeboxDays) && value.timeboxDays >= 1 && value.timeboxDays <= 90
+    && Number.isInteger(value.minimumResponses) && isFiniteNumber(value.minimumResponses) && value.minimumResponses >= 1 && value.minimumResponses <= 1_000
+    && Array.isArray(value.steps) && value.steps.length > 0 && value.steps.every(isString)
+    && Array.isArray(value.stopConditions) && value.stopConditions.length > 0 && value.stopConditions.every(isString);
+}
+
+function isPortfolioRankingData(value: unknown): value is PortfolioRankingData {
+  return isPlainObject(value) && value.dataKind === 'PORTFOLIO_RANKING'
+    && value.verificationState === 'USER_SUPPLIED_NOT_VERIFIED'
+    && isString(value.scoreFormula) && value.confirmedRevenueEur === 0
+    && Array.isArray(value.ranking) && value.ranking.length <= 10
+    && value.ranking.every((item, index) => isPlainObject(item)
+      && item.rank === index + 1 && isString(item.id) && isString(item.name)
+      && ['priorityScore', 'evidencePoints', 'readinessPoints', 'economicsPoints', 'riskPenalty', 'projectedOperatingResultEur'].every(key => isFiniteNumber(item[key]))
+      && isFiniteNumber(item.priorityScore) && item.priorityScore >= 0 && item.priorityScore <= 100);
+}
+
+function isMarginCalculationData(value: unknown): value is MarginCalculationData {
+  if (!isPlainObject(value)) return false;
+  return [
+    value.unitPriceEur,
+    value.variableCostPerUnitEur,
+    value.fixedCostsEur,
+    value.plannedUnits,
+    value.contributionPerUnitEur,
+    value.projectedRevenueEur,
+    value.projectedVariableCostsEur,
+    value.projectedTotalCostsEur,
+    value.projectedOperatingResultEur,
+    value.projectedMarginPercent,
+  ].every(isFiniteNumber)
+    && (value.dataKind === undefined || value.dataKind === 'MARGIN_CALCULATION')
+    && (value.breakEvenUnits === null || (Number.isInteger(value.breakEvenUnits) && isFiniteNumber(value.breakEvenUnits)))
+    && value.revenueKind === 'PROJECTION_FROM_USER_INPUT'
+    && value.confirmedRevenueEur === 0
+    && Array.isArray(value.warnings) && value.warnings.every(isString);
+}
+
+export function isAgentDeterministicResultData(toolId: string, value: unknown): value is AgentDeterministicResultData {
+  switch (toolId) {
+    case 'opportunity.margin-calculator.v1': return isMarginCalculationData(value);
+    case DEMAND_TOOL_ID: return isDemandEvidenceData(value);
+    case COMPETITOR_TOOL_ID: return isCompetitorAnalysisData(value);
+    case VALIDATION_TOOL_ID: return isValidationPlanData(value);
+    case PORTFOLIO_TOOL_ID: return isPortfolioRankingData(value);
+    default: return false;
+  }
 }

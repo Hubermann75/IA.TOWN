@@ -46,7 +46,7 @@ export interface AgentRuntimeDefinition {
   toolsAvailable: Array<{ name: string; connected: boolean; toolId?: string }>;
   permissions: { declared: string[]; enforced: string[] };
   model?: { provider: 'gemini'; mode: 'PROPOSAL_ONLY' };
-  acceptedMissions: Array<'TEXT_PROPOSAL' | 'MARGIN_ANALYSIS'>;
+  acceptedMissions: Array<'TEXT_PROPOSAL' | 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING'>;
   dependencies: string[];
   dependenciesVerified: false;
   budgetMaxEur: number | null;
@@ -142,7 +142,7 @@ export function buildAgentRuntimeDefinition(agent: AgentRecord): AgentRuntimeDef
     acceptedMissions: executionMode === 'PROPOSAL_ONLY'
       ? ['TEXT_PROPOSAL']
       : executionMode === 'DETERMINISTIC'
-        ? ['MARGIN_ANALYSIS']
+        ? connectedTools.map(tool => tool.missionType)
         : [],
     dependencies: [],
     dependenciesVerified: false,
@@ -256,7 +256,9 @@ export function claimNextAgentTask(tasks: AgentTask[], now = new Date().toISOStr
   const next = selectNextRunnableAgentTask(tasks, providerAvailable);
 
   if (!next) return { tasks, claimedTask: null };
-  const claimedTask = transition(next, 'RUNNING', 'SYSTEM', 'Proposition demandée au fournisseur configuré.', now, {
+  const claimedTask = transition(next, 'RUNNING', 'SYSTEM', next.executionMode === 'DETERMINISTIC'
+    ? 'Exécuteur local réclamé par le moteur de missions.'
+    : 'Proposition demandée au fournisseur configuré.', now, {
     attempts: next.attempts + 1,
     error: undefined,
   });
@@ -289,7 +291,8 @@ export function recordAgentDeterministicResult(
   if (task.status !== 'RUNNING' || task.executionMode !== 'DETERMINISTIC') {
     throw new Error('Cette tâche n’est pas en cours dans un exécuteur déterministe.');
   }
-  if (result.agentId !== task.agentId || result.resultKind !== 'DETERMINISTIC_RESULT' || result.externalActionExecuted !== false) {
+  if (result.agentId !== task.agentId || !task.connectedTools.includes(result.toolId)
+    || result.resultKind !== 'DETERMINISTIC_RESULT' || result.externalActionExecuted !== false) {
     throw new Error('Le résultat déterministe ne correspond pas à cette mission.');
   }
   if (!result.output.trim() || result.output.length > 12_000) {

@@ -27,7 +27,7 @@ import {
   type AgentTaskPriority,
 } from '../logic/agentTaskEngine';
 import { readAgentTaskStore, saveAgentTasks } from '../logic/agentTaskStorage';
-import { executeRegisteredAgentTool, getAgentExecutionMode } from '../logic/agentToolRegistry';
+import { executeRegisteredAgentTool, getAgentExecutionMode, getAgentTools } from '../logic/agentToolRegistry';
 import { RobotAvatar, RobotRoleDesign } from './RobotAvatar';
 import { soundEngine } from '../utils/soundEngine';
 import { 
@@ -130,6 +130,7 @@ export const AgentFileView: React.FC = () => {
   const queuedUnavailableTaskCount = agentTasks.filter(task => task.status === 'QUEUED' && task.executionMode === 'UNAVAILABLE').length;
   const nextRunnableTask = selectNextRunnableAgentTask(agentTasks, runtimeStatus?.available === true);
   const selectedAgentExecutionMode = getAgentExecutionMode(selectedAgent);
+  const selectedAgentTools = getAgentTools(selectedAgent);
 
   const filteredAgents = AGENT_REGISTRY.filter(agent => {
     const matchesSearch = 
@@ -558,13 +559,13 @@ export const AgentFileView: React.FC = () => {
                   Mettre en file
                 </button>
               </div>
-              {selectedAgentExecutionMode === 'DETERMINISTIC' && (
+              {selectedAgentExecutionMode === 'DETERMINISTIC' && selectedAgentTools[0] && (
                 <button
                   type="button"
-                  onClick={() => setNewMissionText(JSON.stringify({ unitPriceEur: 29, variableCostPerUnitEur: 4.75, fixedCostsEur: 100, plannedUnits: 10 }, null, 2))}
+                  onClick={() => setNewMissionText(selectedAgentTools[0].exampleMission)}
                   className="text-[9px] font-mono-code text-cyan-300 underline underline-offset-2"
                 >
-                  Insérer le modèle JSON de calcul
+                  Insérer le modèle JSON · {selectedAgentTools[0].name}
                 </button>
               )}
               <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-2 space-y-2">
@@ -639,7 +640,7 @@ export const AgentFileView: React.FC = () => {
                             <p className="mt-2 text-[9px] text-slate-500">Outil local : {task.result.toolId} · données de la mission</p>
                             <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-100">{task.result.output}</p>
                             <p className="mt-2 text-[10px] font-mono-code text-amber-300">
-                              Projection depuis les entrées; revenu confirmé : {task.result.data.confirmedRevenueEur.toFixed(2)} €. Aucun registre bancaire modifié.
+                              Résultat local issu des données fournies. Aucune recherche web, publication, dépense, vente ni écriture bancaire n’a été exécutée.
                             </p>
                           </>
                         )}

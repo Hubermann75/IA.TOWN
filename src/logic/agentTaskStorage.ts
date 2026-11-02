@@ -10,6 +10,7 @@ import {
   type AgentTaskStatus,
 } from './agentTaskEngine';
 import type { AgentTaskProposal } from './agentRuntimeClient';
+import { isAgentDeterministicResultData } from './agentDeterministicExecutors';
 
 const STORAGE_KEY = 'IA_TOWN_AGENT_TASKS_V1';
 const MAX_STORE_JSON_LENGTH = 3_000_000;
@@ -75,7 +76,6 @@ function isProposal(value: unknown): value is AgentTaskProposal {
 function isDeterministicResult(value: unknown): value is Extract<AgentTaskResult, { resultKind: 'DETERMINISTIC_RESULT' }> {
   if (!value || typeof value !== 'object') return false;
   const result = value as Partial<Extract<AgentTaskResult, { resultKind: 'DETERMINISTIC_RESULT' }>>;
-  const data = result.data;
   return typeof result.requestId === 'string'
     && typeof result.agentId === 'string'
     && typeof result.agentName === 'string'
@@ -87,24 +87,7 @@ function isDeterministicResult(value: unknown): value is Extract<AgentTaskResult
     && result.output.length <= 12_000
     && result.resultKind === 'DETERMINISTIC_RESULT'
     && result.externalActionExecuted === false
-    && !!data
-    && [
-      data.unitPriceEur,
-      data.variableCostPerUnitEur,
-      data.fixedCostsEur,
-      data.plannedUnits,
-      data.contributionPerUnitEur,
-      data.projectedRevenueEur,
-      data.projectedVariableCostsEur,
-      data.projectedTotalCostsEur,
-      data.projectedOperatingResultEur,
-      data.projectedMarginPercent,
-    ].every(number => typeof number === 'number' && Number.isFinite(number))
-    && (data.breakEvenUnits === null || (typeof data.breakEvenUnits === 'number' && Number.isInteger(data.breakEvenUnits)))
-    && data.revenueKind === 'PROJECTION_FROM_USER_INPUT'
-    && data.confirmedRevenueEur === 0
-    && Array.isArray(data.warnings)
-    && data.warnings.every(warning => typeof warning === 'string');
+    && isAgentDeterministicResultData(result.toolId ?? '', result.data);
 }
 
 function isAgentTaskResult(value: unknown): value is AgentTaskResult {
@@ -120,9 +103,11 @@ export function isAgentTask(value: unknown): value is AgentTask {
     && typeof task.building === 'string'
     && (task.agentType === 'TYPE_A_IA' || task.agentType === 'TYPE_B_SERVICE' || task.agentType === 'TYPE_C_HYBRID')
     && (task.executionMode === 'DETERMINISTIC' || task.executionMode === 'PROPOSAL_ONLY' || task.executionMode === 'UNAVAILABLE')
-    && (task.agentType === 'TYPE_B_SERVICE'
-      ? (task.executionMode === 'DETERMINISTIC' || task.executionMode === 'UNAVAILABLE')
-      : task.executionMode === 'PROPOSAL_ONLY')
+    && (task.executionMode === 'DETERMINISTIC'
+      ? Array.isArray(task.connectedTools) && task.connectedTools.length > 0
+      : task.agentType === 'TYPE_B_SERVICE'
+        ? task.executionMode === 'UNAVAILABLE'
+        : task.executionMode === 'PROPOSAL_ONLY')
     && typeof task.mission === 'string' && task.mission.trim().length > 0 && task.mission.length <= MAX_AGENT_MISSION_LENGTH
     && typeof task.priority === 'string' && PRIORITIES.has(task.priority as AgentTaskPriority)
     && typeof task.status === 'string' && STATUSES.has(task.status as AgentTaskStatus)
@@ -136,7 +121,10 @@ export function isAgentTask(value: unknown): value is AgentTask {
     && isStringArray(task.declaredPermissions)
     && Array.isArray(task.connectedTools) && task.connectedTools.every(toolId => typeof toolId === 'string')
     && (task.executionMode === 'DETERMINISTIC' ? task.connectedTools.length > 0 : task.connectedTools.length === 0)
-    && (task.result === undefined || (isAgentTaskResult(task.result) && task.result.agentId === task.agentId))
+    && (task.result === undefined || (isAgentTaskResult(task.result)
+      && task.result.agentId === task.agentId
+      && (task.result.resultKind === 'PROPOSAL'
+        || (Array.isArray(task.connectedTools) && task.connectedTools.includes(task.result.toolId)))))
     && (task.error === undefined || typeof task.error === 'string')
     && Array.isArray(task.history) && task.history.length > 0 && task.history.length <= MAX_AGENT_TASK_EVENTS && task.history.every(isEvent)
     && ((task.status === 'WAITING_REVIEW' || task.status === 'REVIEWED' || task.status === 'DISMISSED')

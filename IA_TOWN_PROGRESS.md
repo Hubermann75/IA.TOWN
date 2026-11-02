@@ -7,18 +7,20 @@
 
 ## État technique V6 — 2 novembre 2026
 
-### Phase réalisée : cycle de missions et registre d’exécution normalisé
+### Phase réalisée : cycle de missions et premiers exécutants OPPORTUNITY.LAB
 
-- Un schéma commun dérive une définition d’exécution pour les 94 profils historiques du registre. Il distingue les outils déclarés, l’unique outil local connecté, les permissions réellement appliquées, les budgets inconnus et les tests individuels absents.
+- Un schéma commun dérive une définition d’exécution pour les 94 profils historiques du registre. Il distingue les outils déclarés, les outils locaux connectés, les permissions réellement appliquées, les budgets inconnus et les tests individuels absents.
 - Une file locale persistante enregistre les missions avec priorité, historique, tentatives, résultat, erreur, revue et annulation avant exécution. L’ordre de priorité est déterministe.
-- La vue Agents enregistre désormais la mission en file sans augmenter les compteurs de travail terminé. La vue détaillée lance un calcul local ou une proposition Gemini seulement après une action explicite de l’utilisateur.
+- La vue Agents enregistre désormais la mission en file sans augmenter les compteurs de travail terminé. La vue détaillée lance un outil local ou une proposition Gemini seulement après une action explicite de l’utilisateur.
 - Les profils sans exécuteur restent en file et ne sont pas envoyés au fournisseur. Un rechargement pendant un appel marque la tâche en échec avec résultat inconnu; aucune relance automatique n’a lieu.
 - Les propositions sont persistées localement et soumises à revue humaine. « Relue » ne signifie pas action autorisée ni exécutée.
 - Le coût d’appel Gemini demeure non mesuré. `localStorage` n’est pas une base serveur et ne synchronise pas les appareils.
-- Un calculateur déterministe de marge est opérationnel sur le profil historique `MARGIN.PREDICTOR` (ID 73), mappé comme pilote vers `MARGIN.CALCULATOR` V6 (ID cible 82). Le registre principal garde encore l’ancien ID/nom; cette équivalence ne compte pas encore comme une réconciliation complète du catalogue. Le calculateur ne touche pas aux paiements ni aux données bancaires; ses projections affichent zéro revenu confirmé.
-- Le registre contient encore les noms et répartitions historiques; il ne correspond pas encore aux 94 rôles nommés de la spécification V6. À ce stade, le catalogue technique comporte 1 exécuteur déterministe, 39 profils de proposition conditionnelle et 54 profils sans exécuteur.
+- Cinq outils déterministes locaux couvrent des tâches délimitées des rôles historiques `SCOUT.AI` (ID 71), `NICHE.DRILLER` (75), `MARGIN.PREDICTOR` (73), `PROTOTYPE.TRIGGER` (76) et `REVENUE.ENGINE` (74). Ils sont associés comme pilotes aux cibles V6 80 `DEMAND.SCOUT`, 81 `COMPETITOR.ANALYST`, 82 `MARGIN.CALCULATOR`, 83 `VALIDATION.AGENT` et 84 `PORTFOLIO.MANAGER`.
+- `SCOUT.AI` structure les signaux et sources saisis par l’utilisateur sans recherche web ni vérification en ligne. `NICHE.DRILLER` compare les mentions présentes dans des fiches saisies; l’absence de mention n’est pas une preuve d’absence. `PROTOTYPE.TRIGGER` prépare un plan qui n’est pas exécuté. `REVENUE.ENGINE` classe des hypothèses avec un indice documenté, pas une probabilité de succès ni un revenu réel. Tous ces outils restent locaux, sans frais API ni effet externe.
+- Le registre principal garde encore les anciens IDs/noms; les correspondances sont des pilotes d’exécution et ne valent pas réconciliation complète du catalogue V6. Les projections affichent zéro revenu confirmé.
+- Le registre ne correspond pas encore aux 94 rôles nommés de la spécification V6. Il comporte maintenant 5 profils avec exécuteur local ciblé (5,3 % des 94 rôles), 36 profils de proposition Gemini conditionnelle et 53 profils sans exécuteur. Aucun rôle n’est encore compté comme agent V6 complet avec tous ses outils métier et son parcours externe vérifié.
 
-**Validation de cette phase :** `npm test` passe 45/45; `npm run lint` passe (`tsc --noEmit`); `npm run build` réussit. Vite signale un bundle JavaScript d’environ 945 kB après minification et un precache PWA d’environ 26,8 MB. Ces contrôles ne valident pas un appel Gemini réel, une opération financière externe, une base serveur ou une synchronisation inter-appareils. L’application n’a pas été lancée dans un navigateur pendant cette phase.
+**Validation de cette phase :** `npm test` passe 51/51; `npm run lint` passe (`tsc --noEmit`); `npm run build` réussit pour le client et le serveur. Vite signale un bundle JavaScript de 963,26 kB après minification, au-dessus de son seuil de 500 kB, et un precache PWA de 26 819,99 KiB. Les tests ne valident pas un appel Gemini réel, une recherche web, une opération financière externe, une base serveur ou une synchronisation inter-appareils. L’application n’a pas été lancée dans un navigateur pendant cette phase.
 
 ---
 
