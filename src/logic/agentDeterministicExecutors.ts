@@ -75,12 +75,28 @@ export interface PortfolioRankingData {
   }>;
 }
 
+export interface MineRiskScreeningData {
+  dataKind: 'MINE_RISK_SCREENING';
+  screeningStatus: 'BLOCKED' | 'REVIEW_REQUIRED' | 'NO_RED_FLAGS_RESEARCH_ONLY';
+  evidenceState: 'USER_SUPPLIED_UNVERIFIED';
+  opportunityName: string;
+  sourceName: string;
+  sourceUrl: string;
+  observedAt: string;
+  activityType: 'FREELANCE' | 'MICROTASK' | 'ADVERTISING' | 'AFFILIATE' | 'DIGITAL_PRODUCT' | 'OTHER';
+  redFlags: string[];
+  reviewItems: string[];
+  platformActionExecuted: false;
+  financialActionExecuted: false;
+}
+
 export type AgentDeterministicResultData =
   | MarginCalculationData
   | DemandEvidenceData
   | CompetitorAnalysisData
   | ValidationPlanData
-  | PortfolioRankingData;
+  | PortfolioRankingData
+  | MineRiskScreeningData;
 
 export interface AgentDeterministicResult {
   requestId: string;
@@ -107,6 +123,7 @@ const DEMAND_TOOL_ID = 'opportunity.demand-evidence.v1';
 const COMPETITOR_TOOL_ID = 'opportunity.competitor-comparison.v1';
 const VALIDATION_TOOL_ID = 'opportunity.validation-plan.v1';
 const PORTFOLIO_TOOL_ID = 'opportunity.portfolio-ranking.v1';
+const MINE_GUARD_TOOL_ID = 'centmine.mine-guard-screening.v1';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -242,23 +259,34 @@ function parseBoundedText(value: unknown, field: string, maxLength: number): str
   return value.trim();
 }
 
+function isSafePublicSourceUrl(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length > 500) return false;
+  try {
+    const parsed = new URL(value);
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    const isPrivateIpv4 = /^(10\.|127\.|192\.168\.|169\.254\.|0\.)/.test(host)
+      || /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+      || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)
+      || /^192\.0\.0\./.test(host)
+      || /^198\.(18|19)\./.test(host)
+      || /^(198\.51\.100|203\.0\.113)\./.test(host)
+      || /^(22[4-9]|23\d|24\d|25[0-5])\./.test(host);
+    const isLocalIpv6 = host === '::1' || host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80:') || host.startsWith('::ffff:');
+    return ['http:', 'https:'].includes(parsed.protocol)
+      && !parsed.username && !parsed.password
+      && host !== 'localhost' && !host.endsWith('.local')
+      && !isPrivateIpv4 && !isLocalIpv6;
+  } catch {
+    return false;
+  }
+}
+
 function parsePublicSourceUrl(value: unknown, field: string): string {
   const raw = parseBoundedText(value, field, 500);
-  let parsed: URL;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    throw new Error(`${field} doit être une URL HTTP(S) valide.`);
-  }
-  const host = parsed.hostname.toLowerCase();
-  const isPrivateIpv4 = /^(10\.|127\.|192\.168\.|169\.254\.)/.test(host)
-    || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
-  if (!['http:', 'https:'].includes(parsed.protocol)
-    || parsed.username || parsed.password
-    || host === 'localhost' || host.endsWith('.local') || isPrivateIpv4 || host === '::1') {
+  if (!isSafePublicSourceUrl(raw)) {
     throw new Error(`${field} doit être une source web publique sans identifiant intégré.`);
   }
-  return parsed.toString();
+  return new URL(raw).toString();
 }
 
 function parseObservedAt(value: unknown, field: string): string {
@@ -561,6 +589,83 @@ export function runPortfolioRanking(
   return createResult(agent, taskId, PORTFOLIO_TOOL_ID, output, data, now);
 }
 
+export function runMineGuardScreening(
+  agent: AgentRecord,
+  taskId: string,
+  mission: string,
+  now = new Date().toISOString(),
+): AgentDeterministicResult {
+  assertAuthorizedRole(agent, '38', 'MINE.GUARD', 'LOCAL_CENTMINE_RISK_SCREENING');
+  const fields = [
+    'opportunityName', 'sourceName', 'sourceUrl', 'observedAt', 'activityType',
+    'payoutTermsProvided', 'platformRulesReviewed', 'accountCredentialsRequested',
+    'upfrontFeeRequired', 'guaranteedIncomeClaim', 'sensitiveDataRequested',
+    'prohibitedAutomationRequired', 'dataRightsClear',
+  ];
+  const input = parseExactJsonObject(mission, fields);
+  const activityTypes: MineRiskScreeningData['activityType'][] = [
+    'FREELANCE', 'MICROTASK', 'ADVERTISING', 'AFFILIATE', 'DIGITAL_PRODUCT', 'OTHER',
+  ];
+  if (!activityTypes.includes(input.activityType as MineRiskScreeningData['activityType'])) {
+    throw new Error(`activityType doit être l’une de ces valeurs : ${activityTypes.join(', ')}.`);
+  }
+  const booleanFields = [
+    'payoutTermsProvided', 'platformRulesReviewed', 'accountCredentialsRequested',
+    'upfrontFeeRequired', 'guaranteedIncomeClaim', 'sensitiveDataRequested',
+    'prohibitedAutomationRequired', 'dataRightsClear',
+  ];
+  for (const field of booleanFields) {
+    if (typeof input[field] !== 'boolean') throw new Error(`${field} doit être true ou false.`);
+  }
+
+  const redFlags: string[] = [];
+  if (input.accountCredentialsRequested) redFlags.push('L’offre demande des identifiants de compte.');
+  if (input.upfrontFeeRequired) redFlags.push('Un paiement initial est exigé pour accéder à l’opportunité.');
+  if (input.guaranteedIncomeClaim) redFlags.push('Un revenu garanti est annoncé.');
+  if (input.sensitiveDataRequested) redFlags.push('Des données sensibles sont demandées.');
+  if (input.prohibitedAutomationRequired) redFlags.push('Le scénario requiert une automatisation indiquée comme interdite par la plateforme.');
+
+  const reviewItems: string[] = [];
+  if (!input.payoutTermsProvided) reviewItems.push('Les conditions et seuils de paiement ne sont pas documentés.');
+  if (!input.platformRulesReviewed) reviewItems.push('Les règles actuelles de la plateforme restent à vérifier.');
+  if (!input.dataRightsClear) reviewItems.push('Les droits d’utilisation des données ou contenus restent à clarifier.');
+  const screeningStatus: MineRiskScreeningData['screeningStatus'] = redFlags.length
+    ? 'BLOCKED'
+    : reviewItems.length
+      ? 'REVIEW_REQUIRED'
+      : 'NO_RED_FLAGS_RESEARCH_ONLY';
+
+  const data: MineRiskScreeningData = {
+    dataKind: 'MINE_RISK_SCREENING',
+    screeningStatus,
+    evidenceState: 'USER_SUPPLIED_UNVERIFIED',
+    opportunityName: parseBoundedText(input.opportunityName, 'opportunityName', 120),
+    sourceName: parseBoundedText(input.sourceName, 'sourceName', 100),
+    sourceUrl: parsePublicSourceUrl(input.sourceUrl, 'sourceUrl'),
+    observedAt: parseObservedAt(input.observedAt, 'observedAt'),
+    activityType: input.activityType as MineRiskScreeningData['activityType'],
+    redFlags,
+    reviewItems,
+    platformActionExecuted: false,
+    financialActionExecuted: false,
+  };
+  const statusText: Record<MineRiskScreeningData['screeningStatus'], string> = {
+    BLOCKED: 'BLOQUÉ : un signal de risque explicite a été fourni.',
+    REVIEW_REQUIRED: 'REVUE HUMAINE REQUISE : des informations essentielles manquent.',
+    NO_RED_FLAGS_RESEARCH_ONLY: 'AUCUN SIGNAL BLOQUANT DANS LES CHAMPS SAISIS : recherche documentaire seulement.',
+  };
+  const output = [
+    statusText[screeningStatus],
+    `Opportunité : ${data.opportunityName} · type : ${data.activityType}.`,
+    `Source déclarée : ${data.sourceName} · observée le ${data.observedAt} · ${data.sourceUrl}`,
+    ...(redFlags.length ? ['Signaux de risque :', ...redFlags.map(flag => `• ${flag}`)] : []),
+    ...(reviewItems.length ? ['Points à vérifier :', ...reviewItems.map(item => `• ${item}`)] : []),
+    'Les données et déclarations ne sont pas vérifiées par cet outil. Ce résultat n’est ni un avis juridique, ni une autorisation d’exploitation ou d’automatisation.',
+    'Aucun compte, site, plateforme ou service financier n’a été contacté; aucune action externe n’a été exécutée.',
+  ].join('\n');
+  return createResult(agent, taskId, MINE_GUARD_TOOL_ID, output, data, now);
+}
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -576,7 +681,7 @@ function isDemandEvidenceData(value: unknown): value is DemandEvidenceData {
     || !Array.isArray(value.evidence) || value.evidence.length !== value.sourceCount) return false;
   return value.evidence.every(item => isPlainObject(item)
     && isString(item.sourceName) && item.sourceName.length > 0 && item.sourceName.length <= 100
-    && isString(item.url) && Number.isFinite(Date.parse(item.observedAt as string))
+    && isSafePublicSourceUrl(item.url) && isString(item.observedAt) && Number.isFinite(Date.parse(item.observedAt))
     && isString(item.signal) && item.signal.length > 0 && item.signal.length <= 240
     && Number.isInteger(item.userRatedStrength) && isFiniteNumber(item.userRatedStrength)
     && item.userRatedStrength >= 1 && item.userRatedStrength <= 5);
@@ -590,7 +695,7 @@ function isCompetitorAnalysisData(value: unknown): value is CompetitorAnalysisDa
     || !Array.isArray(value.potentialListingGaps)) return false;
   const competitorCount = value.competitorCount as number;
   const competitorsValid = value.competitors.every(item => isPlainObject(item)
-    && isString(item.name) && isString(item.sourceUrl)
+    && isString(item.name) && isSafePublicSourceUrl(item.sourceUrl)
     && isString(item.observedAt) && Number.isFinite(Date.parse(item.observedAt))
     && (item.priceEur === null || isFiniteNumber(item.priceEur))
     && Array.isArray(item.listedFeatures) && item.listedFeatures.every(isString));
@@ -628,6 +733,23 @@ function isPortfolioRankingData(value: unknown): value is PortfolioRankingData {
       && isFiniteNumber(item.priorityScore) && item.priorityScore >= 0 && item.priorityScore <= 100);
 }
 
+function isMineRiskScreeningData(value: unknown): value is MineRiskScreeningData {
+  return isPlainObject(value) && value.dataKind === 'MINE_RISK_SCREENING'
+    && ['BLOCKED', 'REVIEW_REQUIRED', 'NO_RED_FLAGS_RESEARCH_ONLY'].includes(String(value.screeningStatus))
+    && value.evidenceState === 'USER_SUPPLIED_UNVERIFIED'
+    && isString(value.opportunityName) && value.opportunityName.length > 0 && value.opportunityName.length <= 120
+    && isString(value.sourceName) && value.sourceName.length > 0 && value.sourceName.length <= 100
+    && isSafePublicSourceUrl(value.sourceUrl) && isString(value.observedAt) && Number.isFinite(Date.parse(value.observedAt))
+    && ['FREELANCE', 'MICROTASK', 'ADVERTISING', 'AFFILIATE', 'DIGITAL_PRODUCT', 'OTHER'].includes(String(value.activityType))
+    && Array.isArray(value.redFlags) && value.redFlags.every(isString)
+    && Array.isArray(value.reviewItems) && value.reviewItems.every(isString)
+    && (value.screeningStatus === 'BLOCKED' ? value.redFlags.length > 0
+      : value.screeningStatus === 'REVIEW_REQUIRED'
+        ? value.redFlags.length === 0 && value.reviewItems.length > 0
+        : value.redFlags.length === 0 && value.reviewItems.length === 0)
+    && value.platformActionExecuted === false && value.financialActionExecuted === false;
+}
+
 function isMarginCalculationData(value: unknown): value is MarginCalculationData {
   if (!isPlainObject(value)) return false;
   return [
@@ -656,6 +778,7 @@ export function isAgentDeterministicResultData(toolId: string, value: unknown): 
     case COMPETITOR_TOOL_ID: return isCompetitorAnalysisData(value);
     case VALIDATION_TOOL_ID: return isValidationPlanData(value);
     case PORTFOLIO_TOOL_ID: return isPortfolioRankingData(value);
+    case MINE_GUARD_TOOL_ID: return isMineRiskScreeningData(value);
     default: return false;
   }
 }

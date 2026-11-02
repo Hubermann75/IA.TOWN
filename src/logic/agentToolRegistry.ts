@@ -3,6 +3,7 @@ import {
   runCompetitorComparison,
   runDemandEvidenceAnalyzer,
   runMarginCalculator,
+  runMineGuardScreening,
   runPortfolioRanking,
   runValidationPlan,
   type AgentDeterministicResult,
@@ -16,7 +17,7 @@ export interface AgentToolDefinition {
   allowedAgentId: string;
   allowedAgentName: string;
   requiredCapability: AgentCapability;
-  missionType: 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING';
+  missionType: 'MARGIN_ANALYSIS' | 'DEMAND_EVIDENCE_ANALYSIS' | 'COMPETITOR_DATA_ANALYSIS' | 'VALIDATION_PLAN' | 'PORTFOLIO_RANKING' | 'MINE_RISK_SCREENING';
   exampleMission: string;
   associatedTest: string;
   sideEffects: false;
@@ -25,6 +26,20 @@ export interface AgentToolDefinition {
 }
 
 export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
+  {
+    id: 'centmine.mine-guard-screening.v1',
+    name: 'Filtre de risques local MINE.GUARD',
+    targetV6Role: { id: '16', name: 'MINE GUARD', building: 'AI.DEPTH.CENTMINE' },
+    allowedAgentId: '38',
+    allowedAgentName: 'MINE.GUARD',
+    requiredCapability: 'LOCAL_CENTMINE_RISK_SCREENING',
+    missionType: 'MINE_RISK_SCREENING',
+    exampleMission: JSON.stringify({ opportunityName: 'Mission de test', sourceName: 'Page publique', sourceUrl: 'https://example.org/terms', observedAt: '2026-11-02', activityType: 'FREELANCE', payoutTermsProvided: true, platformRulesReviewed: true, accountCredentialsRequested: false, upfrontFeeRequired: false, guaranteedIncomeClaim: false, sensitiveDataRequested: false, prohibitedAutomationRequired: false, dataRightsClear: true }, null, 2),
+    associatedTest: 'agentTools.test.ts::mine guard blocks red flags and never declares legal approval',
+    sideEffects: false,
+    costEur: 0,
+    execute: runMineGuardScreening,
+  },
   {
     id: 'opportunity.demand-evidence.v1',
     name: 'Analyse locale de signaux de demande fournis',

@@ -7,6 +7,7 @@ import {
   runCompetitorComparison,
   runDemandEvidenceAnalyzer,
   runMarginCalculator,
+  runMineGuardScreening,
   runPortfolioRanking,
   runValidationPlan,
 } from './agentDeterministicExecutors';
@@ -72,14 +73,16 @@ test('registered tool cannot be invoked under another profile or tool identifier
 });
 
 test('the five V6 OPPORTUNITY.LAB targets have one role-bound local tool each', () => {
-  assert.deepEqual(AGENT_TOOL_REGISTRY.map(tool => tool.targetV6Role).sort((a, b) => a.id.localeCompare(b.id)), [
+  const opportunityTools = AGENT_TOOL_REGISTRY.filter(tool => tool.targetV6Role.building === 'OPPORTUNITY.LAB');
+  assert.deepEqual(opportunityTools.map(tool => tool.targetV6Role).sort((a, b) => a.id.localeCompare(b.id)), [
     { id: '80', name: 'DEMAND.SCOUT', building: 'OPPORTUNITY.LAB' },
     { id: '81', name: 'COMPETITOR.ANALYST', building: 'OPPORTUNITY.LAB' },
     { id: '82', name: 'MARGIN.CALCULATOR', building: 'OPPORTUNITY.LAB' },
     { id: '83', name: 'VALIDATION.AGENT', building: 'OPPORTUNITY.LAB' },
     { id: '84', name: 'PORTFOLIO.MANAGER', building: 'OPPORTUNITY.LAB' },
   ]);
-  assert.equal(new Set(AGENT_TOOL_REGISTRY.map(tool => tool.allowedAgentId)).size, 5);
+  assert.equal(opportunityTools.length, 5);
+  assert.equal(new Set(AGENT_TOOL_REGISTRY.map(tool => tool.allowedAgentId)).size, AGENT_TOOL_REGISTRY.length);
   for (const tool of AGENT_TOOL_REGISTRY) {
     const agent = AGENT_REGISTRY.find(candidate => candidate.id === tool.allowedAgentId)!;
     assert.equal(getAgentExecutionMode(agent), 'DETERMINISTIC');
@@ -149,7 +152,45 @@ test('portfolio ranking uses a disclosed hypothesis score and zero confirmed rev
   assert.match(result.output, /Aucune vente, dépense ou écriture bancaire n’a été réalisée/);
 });
 
-test('all five opportunity tools execute through the queue and their results survive storage validation', () => {
+test('mine guard blocks red flags and never declares legal approval', () => {
+  const agent = AGENT_REGISTRY.find(candidate => candidate.id === '38')!;
+  const base = {
+    opportunityName: 'Mission distante',
+    sourceName: 'Page de conditions',
+    sourceUrl: 'https://example.org/terms',
+    observedAt: '2026-11-02',
+    activityType: 'FREELANCE',
+    payoutTermsProvided: true,
+    platformRulesReviewed: true,
+    accountCredentialsRequested: false,
+    upfrontFeeRequired: false,
+    guaranteedIncomeClaim: false,
+    sensitiveDataRequested: false,
+    prohibitedAutomationRequired: false,
+    dataRightsClear: true,
+  };
+  const clear = runMineGuardScreening(agent, 'guard-clear', JSON.stringify(base), '2026-11-02T12:00:00.000Z');
+  assert.equal(clear.data.dataKind, 'MINE_RISK_SCREENING');
+  assert.equal(clear.data.screeningStatus, 'NO_RED_FLAGS_RESEARCH_ONLY');
+  assert.equal(clear.data.evidenceState, 'USER_SUPPLIED_UNVERIFIED');
+  assert.match(clear.output, /ni un avis juridique, ni une autorisation/);
+
+  const blocked = runMineGuardScreening(agent, 'guard-block', JSON.stringify({ ...base, accountCredentialsRequested: true, upfrontFeeRequired: true }), '2026-11-02T12:00:00.000Z');
+  assert.equal(blocked.data.dataKind, 'MINE_RISK_SCREENING');
+  assert.equal(blocked.data.screeningStatus, 'BLOCKED');
+  assert.equal(blocked.data.redFlags.length, 2);
+  assert.equal(blocked.data.platformActionExecuted, false);
+  assert.equal(blocked.data.financialActionExecuted, false);
+
+  const review = runMineGuardScreening(agent, 'guard-review', JSON.stringify({ ...base, platformRulesReviewed: false, dataRightsClear: false }), '2026-11-02T12:00:00.000Z');
+  assert.equal(review.data.dataKind, 'MINE_RISK_SCREENING');
+  assert.equal(review.data.screeningStatus, 'REVIEW_REQUIRED');
+  assert.equal(review.data.reviewItems.length, 2);
+  assert.throws(() => runMineGuardScreening({ ...agent, id: '39' }, 'guard-forged', JSON.stringify(base)));
+  assert.throws(() => runMineGuardScreening(agent, 'guard-invalid', JSON.stringify({ ...base, automated: 'yes' })));
+});
+
+test('all registered local tools execute through the queue and their results survive storage validation', () => {
   const values = new Map<string, string>();
   const storage: AgentTaskStorage = {
     getItem: key => values.get(key) ?? null,

@@ -82,8 +82,8 @@ test('normalized runtime registry covers 94 unique legacy profiles and only list
   assert.equal(new Set(AGENT_RUNTIME_REGISTRY.map(agent => agent.id)).size, 94);
   assert.deepEqual(validateAgentRuntimeRegistry(), { valid: true, issues: [] });
   assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'PROPOSAL_ONLY').length, 36);
-  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'DETERMINISTIC').length, 5);
-  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'UNAVAILABLE').length, 53);
+  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'DETERMINISTIC').length, 6);
+  assert.equal(AGENT_RUNTIME_REGISTRY.filter(agent => agent.executionMode === 'UNAVAILABLE').length, 52);
 });
 
 test('task creation rejects empty missions and queues unsupported service roles without claiming them', () => {

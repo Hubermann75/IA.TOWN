@@ -7,7 +7,7 @@
 
 ## État technique V6 — 2 novembre 2026
 
-### Phase réalisée : cycle de missions et premiers exécutants OPPORTUNITY.LAB
+### Phase réalisée : cycle de missions, OPPORTUNITY.LAB et début de CENTMINE
 
 - Un schéma commun dérive une définition d’exécution pour les 94 profils historiques du registre. Il distingue les outils déclarés, les outils locaux connectés, les permissions réellement appliquées, les budgets inconnus et les tests individuels absents.
 - Une file locale persistante enregistre les missions avec priorité, historique, tentatives, résultat, erreur, revue et annulation avant exécution. L’ordre de priorité est déterministe.
@@ -17,11 +17,14 @@
 - Le coût d’appel Gemini demeure non mesuré. `localStorage` n’est pas une base serveur et ne synchronise pas les appareils.
 - Cinq outils déterministes locaux couvrent des tâches délimitées des rôles historiques `SCOUT.AI` (ID 71), `NICHE.DRILLER` (75), `MARGIN.PREDICTOR` (73), `PROTOTYPE.TRIGGER` (76) et `REVENUE.ENGINE` (74). Ils sont associés comme pilotes aux cibles V6 80 `DEMAND.SCOUT`, 81 `COMPETITOR.ANALYST`, 82 `MARGIN.CALCULATOR`, 83 `VALIDATION.AGENT` et 84 `PORTFOLIO.MANAGER`.
 - Chaque exécuteur pilote expose maintenant la référence du test qui valide sa fonction; le registre signale les profils déterministes sans test associé.
+- Le profil historique `MINE.GUARD` (ID 38) est relié au rôle cible V6 16. Son outil local filtre les signaux de risque déclarés, les conditions de paiement, les règles de plateforme et les droits d’usage; l’entrée garde ses sources et dates.
+- MINE.GUARD classe un dossier `BLOCKED`, `REVIEW_REQUIRED` ou `NO_RED_FLAGS_RESEARCH_ONLY`. Même le dernier état ne certifie rien : les champs et sources sont fournis par l’utilisateur, non vérifiés; aucune action web, plateforme ou financière n’est exécutée.
+- Le registre historique présente six profils CENTMINE (IDs 38 à 43), alors que la spécification V6 en demande huit. Le filtre MINE.GUARD est le seul exécuteur local du groupe à ce stade; les rôles Prospector, Gold Analyst, Task Miner, Ad Miner, Affiliate Miner, Digital Miner et Overmine restent à réconcilier et à implémenter.
 - `SCOUT.AI` structure les signaux et sources saisis par l’utilisateur sans recherche web ni vérification en ligne. `NICHE.DRILLER` compare les mentions présentes dans des fiches saisies; l’absence de mention n’est pas une preuve d’absence. `PROTOTYPE.TRIGGER` prépare un plan qui n’est pas exécuté. `REVENUE.ENGINE` classe des hypothèses avec un indice documenté, pas une probabilité de succès ni un revenu réel. Tous ces outils restent locaux, sans frais API ni effet externe.
 - Le registre principal garde encore les anciens IDs/noms; les correspondances sont des pilotes d’exécution et ne valent pas réconciliation complète du catalogue V6. Les projections affichent zéro revenu confirmé.
-- Le registre ne correspond pas encore aux 94 rôles nommés de la spécification V6. Il comporte maintenant 5 profils avec exécuteur local ciblé (5,3 % des 94 rôles), 36 profils de proposition Gemini conditionnelle et 53 profils sans exécuteur. Aucun rôle n’est encore compté comme agent V6 complet avec tous ses outils métier et son parcours externe vérifié.
+- Le registre ne correspond pas encore aux 94 rôles nommés de la spécification V6. Il comporte maintenant 6 profils avec exécuteur local ciblé (6,4 % des 94 rôles), 36 profils de proposition Gemini conditionnelle et 52 profils sans exécuteur. Aucun rôle n’est encore compté comme agent V6 complet avec tous ses outils métier et son parcours externe vérifié.
 
-**Validation de cette phase :** `npm test` passe 51/51; `npm run lint` passe (`tsc --noEmit`); `npm run build` réussit pour le client et le serveur. Vite signale un bundle JavaScript de 963,87 kB après minification, au-dessus de son seuil de 500 kB, et un precache PWA de 26 820,58 KiB. Les tests ne valident pas un appel Gemini réel, une recherche web, une opération financière externe, une base serveur ou une synchronisation inter-appareils. L’application n’a pas été lancée dans un navigateur pendant cette phase.
+**Validation de cette phase :** `npm test` passe 52/52; `npm run lint` passe (`tsc --noEmit`); `npm run build` réussit pour le client et le serveur. Vite signale un bundle JavaScript de 969,05 kB après minification, au-dessus de son seuil de 500 kB, et un precache PWA de 26 825,64 KiB. Le hook de clôture PWA prend 36,6 secondes lors du build observé. Les tests ne valident pas un appel Gemini réel, une recherche web, une opération financière externe, une base serveur ou une synchronisation inter-appareils. L’application n’a pas été lancée dans un navigateur pendant cette phase.
 
 ---
 
